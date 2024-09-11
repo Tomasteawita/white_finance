@@ -12,9 +12,9 @@ pyRofex._set_environment_parameter("url", murl, pyRofex.Environment.LIVE)
 pyRofex._set_environment_parameter("ws", mwss, pyRofex.Environment.LIVE)
 pyRofex._set_environment_parameter("proprietary", "https://matriz.bull.xoms.com.ar/", pyRofex.Environment.LIVE)
 
-username = os.getenv("USERNAME_MATRIZ_BULL")
-password = os.getenv("PASSWORD_MATRIZ_BULL")
-account = os.getenv("ACCOUNT_BULL_MARKET")
+username = os.getenv("USERNAME_MATRIZ")
+password = os.getenv("PASSWORD_MATRIZ")
+account = os.getenv("ACCOUNT_MARKET")
 
 
 pyRofex.initialize(username,

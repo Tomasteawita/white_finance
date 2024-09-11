@@ -27,8 +27,8 @@ driver = webdriver.Firefox(service=service, options=options)
 # 2. Navegar a la página de inicio de sesión
 driver.get('https://www.bullmarketbrokers.com/Security/SignIn')
 
-username = os.getenv("BULL_MARKET_USERNAME")
-password = os.getenv("BULL_MARTER_PASSWORD")
+username = os.getenv("USERNAME")
+password = os.getenv("PASSWORD")
 
 # 3. Completar el formulario de login
 username_field = driver.find_element(By.ID, 'Email')
