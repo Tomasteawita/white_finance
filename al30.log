@@ -1,0 +1,9 @@
+{
+'status': 'OK', 'marketData': {
+'CL': {
+'price': 56.62, 'size': None, 'date': 1725840000000}, 'TC': 33025, 'BI': [{
+'price': 56.31, 'size': 1259}], 'SE': {
+'price': 56.32, 'size': None, 'date': None}, 'IV': None, 'ACP': {
+'price': 56.3, 'size': 233676, 'date': None}, 'NV': 63841865, 'LO': 56.03, 'OP': 56.3, 'LA': {
+'price': 56.32, 'size': 479, 'date': 1725990056000}, 'HI': 56.85, 'OI': None, 'OF': [{
+'price': 56.32, 'size': 49232}], 'EV': 35923883.2100001, 'TV': None}, 'depth': 1, 'aggregated': True}

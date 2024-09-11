@@ -1,0 +1,14 @@
+requests==2.32.3
+beautifulsoup4==4.12.3
+selenium==4.24.0
+polars==0.20.31
+SQLAlchemy==2.0.30
+fastexcel==0.10.4
+connectorx==0.3.3
+pandas==2.2.2
+psycopg2==2.9.9
+pyRofex==0.5.0
+simplejson==3.19.3
+enum34==1.1.10
+websocket-client==1.8.0
+python-dotenv==1.0.1
