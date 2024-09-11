@@ -27,8 +27,8 @@ driver = webdriver.Firefox(service=service, options=options)
 # 2. Navegar a la página de inicio de sesión
 driver.get('https://www.bullmarketbrokers.com/Security/SignIn')
 
-username = os.getenv("USERNAME")
-password = os.getenv("PASSWORD")
+username = os.getenv("USERNAME_BROKER")
+password = os.getenv("PASSWORD_BROKER")
 
 # 3. Completar el formulario de login
 username_field = driver.find_element(By.ID, 'Email')
@@ -44,7 +44,7 @@ login_button.submit()
 
 # 6. Esperar a que la tabla se cargue (si es necesario)
 try:
-    table = WebDriverWait(driver, 20).until(
+    table = WebDriverWait(driver, 100).until(
         # EC.presence_of_element_located((By.ID, 'id_de_la_tabla'))
         # Obtengo la tabla a partir de la clase
         EC.presence_of_element_located((By.CLASS_NAME, 'logger-pill pull-left fullWidth'))
@@ -64,5 +64,5 @@ print(table_data.prettify())
 with open('table_data.html', 'w') as f:
     f.write(table_data.prettify())
 
-# # 10. Cerrar el navegador
+# 10. Cerrar el navegador
 # driver.quit()
