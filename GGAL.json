@@ -1,9 +1,0 @@
-{"status": "OK", "marketData": 
-{"CL": 
-{"price": 5170, "size": "None", "date": 1725926400000}, "TC": 1376, "BI": [
-{"price": 5250, "size": 3222}], "SE": 
-{"price": 5250, "size": "None", "date": "None"}, "IV": "None", "ACP": 
-{"price": 5170, "size": 1376, "date": "None"}, "NV": 321766, "LO": 5120, "OP": 5170, "LA": 
-{"price": 
-5260, "size": 12, "date": 1726065394000}, "HI": 5290, "OI": "None", "OF": [
-{"price": 5260, "size": 112}], "EV": 1688854530, "TV": "None"}, "depth": 1, "aggregated": "True"}

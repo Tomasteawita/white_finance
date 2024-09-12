@@ -12,17 +12,21 @@ import os
 load_dotenv()
 
 # Specify the path to your GeckoDriver
-gecko_driver_path = "./geckodriver.exe"
+gecko_driver_path = "./drivers/geckodriver.exe"
+chrome_driver_path = "./drivers/chromedriver.exe"
 
-# Create options for Firefox
-options = Options()
-options.headless = True
+# options = Options()
+# options.headless = True
 
 # Create a Service object for GeckoDriver
-service = Service(executable_path=gecko_driver_path)
+# service = Service(executable_path=gecko_driver_path)
+
+# Create a Service object for ChromeDriver
+# service = Service(executable_path=chrome_driver_path)
 
 # Create the WebDriver object using the service
-driver = webdriver.Firefox(service=service, options=options)
+# driver = webdriver.Firefox(service=service, options=options)
+driver = webdriver.Chrome()
 
 # 2. Navegar a la página de inicio de sesión
 driver.get('https://www.bullmarketbrokers.com/Security/SignIn')
