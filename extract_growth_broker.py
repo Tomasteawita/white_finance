@@ -37,14 +37,18 @@ username_field.send_keys(username)
 password_field.send_keys(password)
 
 # 4. Enviar el formulario
-login_button = driver.find_element(By.ID, 'submitButton')
-login_button.submit()
+# login_button = driver.find_element(By.ID, 'submitButton')
+# login_button.submit()
+
+# espero 30 segundos a que inicie sesión manualmente
+input("Presione Enter para continuar...")
+
 
 # Al ejeuctar el submit, la página se redirige a la página del dashboard
 
 # 6. Esperar a que la tabla se cargue (si es necesario)
 try:
-    table = WebDriverWait(driver, 100).until(
+    table = WebDriverWait(driver, 10).until(
         # EC.presence_of_element_located((By.ID, 'id_de_la_tabla'))
         # Obtengo la tabla a partir de la clase
         EC.presence_of_element_located((By.CLASS_NAME, 'logger-pill pull-left fullWidth'))
@@ -65,4 +69,4 @@ with open('table_data.html', 'w') as f:
     f.write(table_data.prettify())
 
 # 10. Cerrar el navegador
-# driver.quit()
+driver.quit()
