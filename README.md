@@ -17,12 +17,15 @@ mkdir data logs drivers
 2. Te tenes que crear el .env con las variables de entorno que estan en los scripts, van a ser aquellas con tus credenciales de tus brokers o de tu cuenta primary.
 ```bash
 # Archivo .env que se encuentra en el directorio raiz
-BROKER_PASSWORD=123456
-BROKER_USER=usuario
+XBROKER_PASSWORD=123456
+XBROKER_USER=usuario
 
-PRIMARY_PASSWORD=123456
-PRIMARY_USER=usuario
-PRIMARY_ACCOUNT=cuenta_comitente
+YBROKER_PASSWORD=123456
+YBROKER_USER=usuario
+
+XPRIMARY_PASSWORD=123456
+XPRIMARY_USER=usuario
+XPRIMARY_ACCOUNT=cuenta_comitente
 ```
 3. Ejecutate esto:
 ```bash
