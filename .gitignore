@@ -2,4 +2,5 @@ venv/
 data/
 drivers/
 logs/
+__pycache__/
 .env
