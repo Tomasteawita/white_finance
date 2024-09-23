@@ -2,9 +2,26 @@ from importlib import import_module
 from os import getenv
 from datetime import datetime
 class WebScrapingInterface:
-    
+    """
+        Interface to interact with the web scraping modules.
+
+        Args:
+        - browser: str
+
+        Attributes:
+        - webdriver: WebDriver instance
+        - raw_data_path: Source data path
+        - broker_modules_dict: Dict with the broker names and their respective modules
+
+        Methods:
+        - _set_broker: Set the broker to use
+        - __call__: Call the interface
+    """
     def __init__(self, **kwargs):
-        driver_module = import_module(f'.webdrivers.{kwargs.get("browser")}_webdriver', package='brokers_web_scraping')
+        driver_module = import_module(
+            f'.webdrivers.{kwargs.get("browser")}_webdriver',
+            package='brokers_web_scraping'
+        )
         driver_class = getattr(driver_module, f'{kwargs.get("browser").capitalize()}WebDriver')
         self.webdriver = driver_class().webdriver
         self.raw_data_path = getenv("RAW_DATA_PATH")
@@ -12,8 +29,7 @@ class WebScrapingInterface:
             "Bull Market": "bullma",
             "IOL": "iol"
         }
-        
-    
+
     def _set_broker(self):
         """
         Setea el broker que se desea utilizar.
@@ -39,10 +55,13 @@ class WebScrapingInterface:
                 continue
             else:
                 broker_module = import_module(f'brokers_web_scraping.brokers.{broker_module_name}')
-                broker_class = getattr(broker_module, f'{self.broker_modules_dict[broker].capitalize()}Broker')
+                broker_class = getattr(
+                    broker_module,
+                    f'{self.broker_modules_dict[broker].capitalize()}Broker'
+                )
                 print("Broker seteado.")
             return broker_class()
-    
+
     def __call__(self):
 
         broker_instance = self._set_broker()
@@ -62,5 +81,5 @@ class WebScrapingInterface:
                     break
                 case _:
                     print("Acción no válida. Por favor, ingrese una acción válida.")
-        
+
         self.webdriver.quit()
