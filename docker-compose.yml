@@ -6,10 +6,14 @@ services:
     container_name: bifi_analytics-postgres
     image: 'postgres:15'
     hostname: ${POSTGRE_HOST}
-    volumes:
-      - ${POSTGRE_DATA_VOLUME}:/var/lib/postgresql/data
     ports:
       - 5432:5432
     command: "-p 5432"
     env_file:
       - .env
+    volumes:
+      - gold_test_clone:/var/lib/postgresql/data
+
+volumes:
+  gold_test_clone:
+    external: true
