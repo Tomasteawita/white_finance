@@ -6,6 +6,31 @@ from raw_to_structure_template import structure_html_data_to_csv_template
 load_dotenv()
 
 
+def define_type_security(security_name):
+    """
+    Define the type of security based on the security name.
+
+    Args:
+    - security_name: str
+
+    Returns:
+    - str
+    """
+    # Si cualquiera de estas palabras está en el nombre del activo, es un bono
+    bonos = ['Bono', 'Bopreal']
+
+    # Si cualquiera de estas palabras está en el nombre del activo, es una Obligacion negociable
+    on = ['On', 'Obligacion negociable']
+
+    if any(word in security_name for word in bonos):
+        return 'bono'
+    elif any(word in security_name for word in on):
+        return 'obligacion_negociable'
+    else:
+        return 'Instrumento_no_identificado'
+
+    
+
 def structure_portfolio(html_data):
     """
     Structure the raw portfolio data and save it in a csv file
@@ -51,6 +76,8 @@ def structure_portfolio(html_data):
         'Ticket', 'Nombre', 'Cantidad', 
         'Ultimo Precio', 'PPC', 'Total'
         ]]
+    
+    df_iol_portfolio['Tipo'] = df_iol_portfolio['Nombre'].apply(define_type_security)
 
     return df_iol_portfolio
 
