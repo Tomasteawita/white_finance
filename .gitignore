@@ -4,3 +4,5 @@ drivers/
 logs/
 __pycache__/
 .env
+python/
+libraries.zip
