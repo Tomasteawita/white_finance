@@ -1,9 +1,0 @@
-polars==0.20.31
-SQLAlchemy==2.0.30
-fastexcel==0.10.4
-connectorx==0.3.3
-pandas==2.2.2
-psycopg2==2.9.9
-simplejson==3.19.3
-lxml==5.3.0
-s3fs==2024.9.0

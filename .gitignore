@@ -5,4 +5,5 @@ logs/
 __pycache__/
 .env
 python/
+lib/
 libraries.zip
