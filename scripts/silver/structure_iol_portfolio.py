@@ -1,10 +1,5 @@
-"""_summary_"""
-from argparse import ArgumentParser
-from dotenv import load_dotenv
+"""transform html data to structured data"""
 from pandas import DataFrame
-from raw_to_structure_template import structure_html_data_to_csv_template
-load_dotenv()
-
 
 def define_type_security(security_name):
     """
@@ -24,12 +19,10 @@ def define_type_security(security_name):
 
     if any(word in security_name for word in bonos):
         return 'bono'
-    elif any(word in security_name for word in on):
+    if any(word in security_name for word in on):
         return 'obligacion_negociable'
-    else:
-        return 'Instrumento_no_identificado'
 
-    
+    return 'Instrumento_no_identificado'
 
 def structure_portfolio(html_data):
     """
@@ -41,7 +34,9 @@ def structure_portfolio(html_data):
     """
     df_iol_portfolio = DataFrame(html_data)
 
-    df_iol_portfolio = df_iol_portfolio[["Activo", "Cantidad", "Último precio", "Precio promedio  de compra"]]
+    df_iol_portfolio = df_iol_portfolio[
+        ["Activo", "Cantidad", "Último precio", "Precio promedio  de compra"]
+    ]
 
     df_iol_portfolio.columns = df_iol_portfolio.columns.droplevel(0)
 
@@ -76,21 +71,7 @@ def structure_portfolio(html_data):
         'Ticket', 'Nombre', 'Cantidad', 
         'Ultimo Precio', 'PPC', 'Total'
         ]]
-    
+
     df_iol_portfolio['Tipo'] = df_iol_portfolio['Nombre'].apply(define_type_security)
 
     return df_iol_portfolio
-
-if __name__ == '__main__':
-
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--date_yyyymmdd", type=str, help="Raw portfolio date in YYYY-MM-DD format."
-        )
-    parser.add_argument(
-        "--broker", type=str, help="Broker name; bullma or iol."
-        )
-
-    args = parser.parse_args()
-    silver_layer_algorithm = structure_html_data_to_csv_template(structure_portfolio)
-    silver_layer_algorithm(**vars(args))

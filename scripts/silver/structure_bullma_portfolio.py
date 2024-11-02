@@ -1,9 +1,5 @@
-"""_summary_"""
-from argparse import ArgumentParser
-from dotenv import load_dotenv
+"""Structure portfolio html file from Bull Market broker"""
 from pandas import DataFrame
-from raw_to_structure_template import structure_html_data_to_csv_template
-load_dotenv()
 
 def structure_portfolio(html_data):
     """
@@ -50,18 +46,3 @@ def structure_portfolio(html_data):
     df_portfolio = df_portfolio[['Ticket', 'Nombre', 'Cantidad', 'Ultimo Precio', 'PPC', 'Total']]
 
     return df_portfolio
-
-
-if __name__ == '__main__':
-
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--date_yyyymmdd", type=str, help="Raw portfolio date in YYYY-MM-DD format."
-        )
-    parser.add_argument(
-        "--broker", type=str, help="Broker name; bullma or iol."
-        )
-
-    args = parser.parse_args()
-    silver_layer_algorithm = structure_html_data_to_csv_template(structure_portfolio)
-    silver_layer_algorithm(**vars(args))

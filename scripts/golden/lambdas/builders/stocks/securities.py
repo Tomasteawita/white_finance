@@ -29,14 +29,14 @@ def get_financial_instrument_type(securitie_type):
     else:
         return 'desconocido'
 
-def load_securities(df):
-    """Load dataframe in golden.securities table"""
+# def load_securities(df):
+#     """Load dataframe in golden.securities table"""
 
-    # Crear una conexión a la base de datos
-    conn = connect(
-        host='database-1.c0zj6jw4d6zg.us-east-1.rds.amazonaws.com',
-        port=3306,
-        user
+#     # Crear una conexión a la base de datos
+#     conn = connect(
+#         host='database-1.c0zj6jw4d6zg.us-east-1.rds.amazonaws.com',
+#         port=3306,
+#         user
 
 def securities(event):
     # Leer con pandas un archivo csv
@@ -44,9 +44,6 @@ def securities(event):
 
     # convierto todas las columnas en minusculas
     df.columns = df.columns.str.lower()
-
-
-
 
     df['securitie_type'] = df['nombre'].apply(get_securitie_type)
     df['financial_instrument_type'] = df['securitie_type'].apply(get_financial_instrument_type)
