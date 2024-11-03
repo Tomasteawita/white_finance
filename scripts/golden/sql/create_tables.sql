@@ -1,16 +1,7 @@
 -- creo un esquiema en postgres llamado golden
 CREATE SCHEMA golden;
 
-/* creo una tabla en el esquema golden llamada securities
-Con los siguientes campos:
-- id_securitie INT PK
-- ticket STR
-- full_name STR
-- securitie_type STR
-- Financial-instrument_type STR
-- dividend_yield FLOAT
-- par_value FLOAT
-*/
+
 CREATE TABLE golden.securities (
     id_securitie SERIAL PRIMARY KEY,
     ticket VARCHAR(10),
@@ -24,13 +15,8 @@ CREATE TABLE golden.securities (
 -- creo o reemplazo la tabla golden.portfolios
 CREATE TABLE golden.portfolios (
     id_portfolio SERIAL PRIMARY KEY,
-    num_month_start SMALLINT,
-    num_month_end SMALLINT,
-    name_month_start VARCHAR(10),
-    name_month_end VARCHAR(10),
-    age_start INT,
-    age_end INT,
     total_investment FLOAT,
+    partition_date CHAR(10)
 );
 
 -- creo o reemplazo la tabla stocks
@@ -49,3 +35,7 @@ CREATE TABLE golden.stocks (
     FOREIGN KEY (id_securitie) REFERENCES golden.securities(id_securitie),
     FOREIGN KEY (id_portfolio) REFERENCES golden.portfolios(id_portfolio)
 );
+
+-- elimino la tabla stocks y portfolio
+DROP TABLE IF EXISTS stocks;
+DROP TABLE IF EXISTS portfolio;

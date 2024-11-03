@@ -14,6 +14,8 @@ class Director:
         self.builder = builder
     
     def construct_model(self):
-        self.builder.load_data(self.source_bucket, self.source_key)
-        self.builder.transform_data()
-        self.builder.load_data()
+        print('Getting sources')
+        sources_dict = self.builder.get_sources()
+        print('Building tables')
+        print(sources_dict)
+        self.builder.build_tables(sources_dict)

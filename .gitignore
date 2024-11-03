@@ -8,3 +8,6 @@ python/
 lib/
 libraries.zip
 test.json
+last_test.log
+*.zip
+psycopg2*/
