@@ -24,6 +24,7 @@ def golden_etl(context, event):
     director.set_builder(builder_model)
     print("Constructing model")
     director.construct_model()
+    
 
     return {
         'statusCode': 200,

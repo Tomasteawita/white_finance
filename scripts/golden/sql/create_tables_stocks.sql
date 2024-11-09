@@ -15,6 +15,7 @@ CREATE TABLE golden.securities (
 -- creo o reemplazo la tabla golden.portfolios
 CREATE TABLE golden.portfolios (
     id_portfolio SERIAL PRIMARY KEY,
+    broker_name VARCHAR(255),
     total_investment FLOAT,
     partition_date CHAR(10)
 );
@@ -37,5 +38,6 @@ CREATE TABLE golden.stocks (
 );
 
 -- elimino la tabla stocks y portfolio
-DROP TABLE IF EXISTS stocks;
-DROP TABLE IF EXISTS portfolio;
+DROP TABLE IF EXISTS golden.stocks;
+DROP TABLE IF EXISTS golden.portfolio;
+DROP TABLE IF EXISTS goldensecurities;
