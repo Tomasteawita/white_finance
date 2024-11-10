@@ -159,6 +159,7 @@ class Stocks(BuilderInterface):
         with self.engine.connect() as conn:
             result = conn.execute(query_to_delete)
             print(f'{result.rowcount} rows deleted')
+            conn.commit()
         print('Stocks deleted')
     
     def build_stocks_tables(self, portfolio_metadata, df_portfolio):
