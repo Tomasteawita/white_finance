@@ -6,19 +6,24 @@ param (
     [string]$browser
 )
 
-# Activa el entorno virtual
+$path_pwd = pwd
+
 echo "Activando entorno virtual desde path absoluto"
 cd "C:\Users\$usuario\bifi_analytics-etl\venv\Scripts"
 ./activate
+echo "Entorno virtual activado"
 
-# Ejecuta el script de python
 echo "Ejecutando script de python"
 
 cd "C:\Users\$usuario\bifi_analytics-etl\scripts\bronze"
 
+echo "Primero vamos por Bull Market"
 python client.py --browser $browser
+echo "Segundo vamos por Invertir Online"
 python client.py --browser $browser
 
+echo "Desactivando entorno virtual"
 deactivate
-
-cd "C:\Users\$usuario\bifi_analytics-etl\scripts\utils"
+echo "Entorno virtual desactivado"
+echo "Volviendo al path original"
+cd $path_pwd
