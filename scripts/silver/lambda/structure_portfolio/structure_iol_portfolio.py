@@ -11,16 +11,18 @@ def define_type_security(security_name):
     Returns:
     - str
     """
-    # Si cualquiera de estas palabras está en el nombre del activo, es un bono
-    bonos = ['Bono', 'Bopreal']
+    bonos = ['Bono', 'Bopreal', 'Vto']
 
-    # Si cualquiera de estas palabras está en el nombre del activo, es una Obligacion negociable
-    on = ['On', 'Obligacion negociable']
+    on = ['On', 'Obligacion negociable','Vto.']
+
+    letras = ['Letra', 'Lete', 'Lecap', 'Lelink']
 
     if any(word in security_name for word in bonos):
         return 'bono'
     if any(word in security_name for word in on):
         return 'obligacion_negociable'
+    if any(word in security_name for word in letras):
+        return 'letra'
 
     return 'Instrumento_no_identificado'
 
