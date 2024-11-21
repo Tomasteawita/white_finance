@@ -6,7 +6,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-def set_queries(workings_days_week, broker_name):
+def set_queries(workings_days_week, broker_name, partition_date_last):
 
     return f"""
         select securities.ticket , stocks.average_purchase_price , stocks.last_price,
@@ -19,6 +19,7 @@ def set_queries(workings_days_week, broker_name):
         where stocks.partition_date in (
             select partition_date from golden.portfolios p 
             where broker_name = '{broker_name}'
+            {f"and partition_date <= '{partition_date_last}'" if partition_date_last else ''}
             order by partition_date desc
             limit {workings_days_week}
         )
@@ -100,8 +101,8 @@ def main(**kwargs):
 
     engine = sqlalchemy.create_engine(f'postgresql://{user}:{password}@{host}:{port}/{database}')
 
-    bullma_query_profit_per_securitie = set_queries(workings_days_week, 'Bull Market') # deberia ser 6, pero como es el primer periodo, arranca desde el lunes, deberia ser de viernes a viernes la cosa
-    iol_query_profit_per_securitie = set_queries(workings_days_week, 'Invertir Online')
+    bullma_query_profit_per_securitie = set_queries(workings_days_week, 'Bull Market', kwargs.get('partition_date_last')) 
+    iol_query_profit_per_securitie = set_queries(workings_days_week, 'Invertir Online', kwargs.get('partition_date_last'))
     
     with engine.connect() as conn:
         df_securities_bullma = pd.read_sql(bullma_query_profit_per_securitie, conn)
@@ -122,6 +123,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workings_days_week", type=int, help="6 default value")
+    parser.add_argument("--partition_date_last", type=str, help="2024-11-11", default=None)
 
     args = parser.parse_args()
 
