@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte semanal {{partition_date}}</title>
+    <title>Reporte semanal {{ partition_date_report }}</title>
     <style>
         * {
             box-sizing: border-box;
@@ -17,7 +17,7 @@
 </head>
 <body>
     <section>
-        <h1>Reporte semanal {{partition_date}} Bull Market e Invertir Online</h1>
+        <h1>Reporte semanal {{ partition_date_report }} Bull Market e Invertir Online</h1>
         {% for broker in brokers %}
             <div>
                 <h2>Resumen {{broker.name}}</h2>
@@ -42,7 +42,6 @@
                         <li>La semana anterior gane {{broker.ars_profit_first}} ARS</li>
                         <li>Esta semana gane {{broker.ars_profit_last}} ARS</li>
                         <li>La diferencia de ganancia entre la semana anterior y esta semana es de {{broker.ars_profit_diff}} ARS | {{broker.percentage_profit_diff}}%</li>
-
                     </ul>
                 </div>
             </div>
@@ -52,9 +51,9 @@
         <h2>Total en bolsa</h2>
         <div>
             <ul>
-                <li>La semana anterior gane {{last_proffit}}</li>
-                <li>Esta semana gane {{current_proffit}}</li>
-                <li>La diferencia de ganancia entre la semana anterior y esta semana es de {{proffit_difference}} ARS | {{proffit_difference_percentage}}%</li>
+                <li>La semana anterior gane {{ first_proffit }}</li>
+                <li>Esta semana gane {{ last_proffit }}</li>
+                <li>La diferencia de ganancia entre la semana anterior y esta semana es de {{ proffit_difference }} ARS | {{ proffit_difference_percentage }}%</li>
             </ul>
         </div>
     </section>
