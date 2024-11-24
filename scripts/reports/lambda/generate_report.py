@@ -3,12 +3,22 @@ from sqlalchemy import create_engine
 import pandas as pd
 import warnings
 from os import environ
-
-
+import boto3
+import json
 warnings.filterwarnings("ignore")
 
 
 def set_queries(workings_days_week, broker_name, partition_date_last, partition_date_first):
+    """
+    Setea la query para extraer:
+    - ticket
+    - precio promedio de compra (average_purchase_price)
+    - ultimo precio (last_price)
+    - cantidad (quantity)
+    - tipo de instrumento financiero (financial_instrument_type)
+    - fecha de particion (partition_date)
+    de una cartera de inversiones de un broker en particular.
+    """
 
     return f"""
         select securities.ticket , stocks.average_purchase_price , stocks.last_price,
@@ -30,6 +40,10 @@ def set_queries(workings_days_week, broker_name, partition_date_last, partition_
         """
 
 def calculate_profits(df_securities):
+    """
+    Calcula las ganancias y perdidas de cada activo
+    de una cartera de inversiones.
+    """
     df_securities['average_purchase_price'] = df_securities.apply(
         lambda row: row['average_purchase_price'] / 100 if row['financial_instrument_type'] == 'renta fija' else row['average_purchase_price'],
         axis=1
@@ -45,7 +59,10 @@ def calculate_profits(df_securities):
     return df_securities
 
 def gen_report(df_securities, broker_name):
-
+    """
+    Calcula las ganancias y perdidas de una cartera de inversiones
+    especifica de un broker en particular.
+    """
     profit_dict = {
         'name': broker_name,
         'first_partition_date': df_securities['partition_date'].iloc[0],
@@ -92,7 +109,10 @@ def gen_report(df_securities, broker_name):
     return profit_dict
 
 def gen_total_profit(df_reports, context):
-    """Función que calcula el total de ganancias y pérdidas de todas las acciones de todos los brokers"""
+    """
+    Función que calcula el total de ganancias y perdidas de todas las carteras de
+    inversiones. Involucra a todos los brokers
+    """
     context['first_proffit'] = round(float(df_reports['ars_profit_first'].sum()),2)
     context['last_proffit'] = round(float(df_reports['ars_profit_last'].sum()),2)
     context['proffit_difference'] = round(context['last_proffit'],2) - round(context['first_proffit'],2)
@@ -100,27 +120,30 @@ def gen_total_profit(df_reports, context):
 
     return context
 
-
-def gen_html_geport(context, template_html_content):
-
-
+def gen_html_report(context, template_html_content):
+    """
+    Funcion que escribe los datos en el template.html de reporte en formato HTML
+    antes de enviarlo por email.
+    """
     template = Template(template_html_content)
 
     for broker in context['brokers']:
         broker['df_report'] = broker['df_report'].to_html()
 
-    rendered_content = template.render(context)
+    return template.render(context)
 
-    print(f'Reporte generado en {rendered_content}')
+def weekly_report(event):
+    """
+    Funcion principal que orquesta la generación del reporte de rentabilidad semanal
+    de las carteras de inversiones de los brokers Bull Market e Invertir Online.
+    """
 
-def main(event):
+    workings_days_week = event.get('workings_days_week', 6)
 
     if event.get('partition_date_report') is None:
         partition_date_report = pd.Timestamp.now().strftime('%Y-%m-%d')
     else:
         partition_date_report = event.get('partition_date_report')
-
-    print(f'Reporte de rentabilidad de la semana {partition_date_report}')
 
     context = {
         'partition_date_report': partition_date_report,
@@ -131,15 +154,10 @@ def main(event):
         'proffit_difference_percentage' : None
     }
 
-    postgres_password = environ['POSTGRES_PASSWORD']
-    postgres_user = environ['POSTGRES_USER']
-    postgres_host = environ['POSTGRES_HOST']
-    postgres_port = environ['POSTGRES_PORT']
-    postgres_database = environ['POSTGRES_DATABASE']
-    workings_days_week = event.get('workings_days_week', 6)
 
-
-    engine = create_engine(f'postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_database}')
+    engine = create_engine(
+        f'postgresql://{environ['POSTGRES_USER']}:{environ['POSTGRES_PASSWORD']}@{environ['POSTGRES_HOST']}:{environ['POSTGRES_PORT']}/{environ['POSTGRES_DATABASE']}'
+        )
 
     bullma_query_profit_per_securitie = set_queries(
         workings_days_week, 'Bull Market',
@@ -155,16 +173,35 @@ def main(event):
         df_securities_bullma = pd.read_sql(bullma_query_profit_per_securitie, conn)
         df_securities_iol = pd.read_sql(iol_query_profit_per_securitie, conn)
 
-    context['brokers'].append(gen_report(df_securities_bullma, 'Bull Market'))
-    context['brokers'].append(gen_report(df_securities_iol, 'Invertir Online'))
+    context['brokers'] = [
+        gen_report(df, broker_name) for df, broker_name in zip(
+            [df_securities_bullma, df_securities_iol],
+            ['Bull Market', 'Invertir Online']
+        )
+    ]
 
     df_reports = pd.concat(
         [broker['df_report'] for broker in context['brokers']]
     )
 
     context = gen_total_profit(df_reports, context)
+    s3 = boto3.client('s3')
+    bucket_name = event.get('bucket_report')
+    template_key = event.get('key_report_template')
+    template_object = s3.get_object(Bucket=bucket_name, Key=template_key)
+    template_html_content = template_object['Body'].read().decode('utf-8')
 
-    gen_html_report(
+    return gen_html_report(
         context,
-        event.get('template_html_report_path')
+        template_html_content
     )
+
+def lambda_handler(event, context):
+    print("Received event: " + json.dumps(event, indent=2))
+    print("to context: " + str(context))
+
+    send_email(event)
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
