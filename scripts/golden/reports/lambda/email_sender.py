@@ -1,15 +1,23 @@
 """
 Reference to test send email: 
 https://github.com/RekhuGopal/PythonHacks/blob/main/AWSBoto3Hacks/AWSBoto3-SES-Lambda.py
+
+example of event:
+{
+  "sender_email": "your_email@gmail.com",
+  "recipient_email": "your_email@gmail.com",
+  "subject": "test_mails",
+  "bucket_name_message": "bucket",
+  "message_html_key": "key/path/message_test.html"
+}
 """
 import boto3
 from botocore.exceptions import ClientError
-from os import environ
 import json
 
 def send_email(event):
-    sender = environ.get('SENDER_EMAIL')
-    recipient = environ.get('RECIPIENT_EMAIL')
+    sender = event.get('sender_email')
+    recipient = event.get('recipient_email')
 
     s3 = boto3.client('s3')
     bucket_name_message = event.get('bucket_name_message')
@@ -39,7 +47,6 @@ def send_email(event):
                     }
                 },
                 'subject': {
-
                     'Data': subject
                 },
             },
@@ -59,7 +66,6 @@ def lambda_handler(event, context):
     send_email(event)
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('email sent!')
     }
 
-# probar armar un HTML pedorro en el bucket y mandar una prueba manual con ese bucket y key

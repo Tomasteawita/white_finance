@@ -1,3 +1,14 @@
+"""
+Example to test:
+{
+    "workings_days_week": 6,
+    "partition_date_first": "2024-11-15",
+    "partition_date_last": "2024-11-22",
+    "partition_date_report": "2024-11-23",
+    "bucket_report": "bucket",
+    "key_report_template": "lambdas_path/reports/template.html"
+}
+"""
 from jinja2 import Template
 from sqlalchemy import create_engine
 import pandas as pd
@@ -58,7 +69,7 @@ def calculate_profits(df_securities):
 
     return df_securities
 
-def gen_report(df_securities, broker_name):
+def gen_broker_report(df_securities, broker_name):
     """
     Calcula las ganancias y perdidas de una cartera de inversiones
     especifica de un broker en particular.
@@ -174,7 +185,7 @@ def weekly_report(event):
         df_securities_iol = pd.read_sql(iol_query_profit_per_securitie, conn)
 
     context['brokers'] = [
-        gen_report(df, broker_name) for df, broker_name in zip(
+        gen_broker_report(df, broker_name) for df, broker_name in zip(
             [df_securities_bullma, df_securities_iol],
             ['Bull Market', 'Invertir Online']
         )
@@ -185,23 +196,42 @@ def weekly_report(event):
     )
 
     context = gen_total_profit(df_reports, context)
+    # deberia estar en el key lambda_path/reports/template.html
     s3 = boto3.client('s3')
     bucket_name = event.get('bucket_report')
     template_key = event.get('key_report_template')
     template_object = s3.get_object(Bucket=bucket_name, Key=template_key)
     template_html_content = template_object['Body'].read().decode('utf-8')
 
-    return gen_html_report(
+    template_rendered = gen_html_report(
         context,
         template_html_content
     )
+
+    output_html_s3_report_bucket = event.get('bucket_report')
+    output_html_s3_report_key = f"lambdas_path/reports/earnings_report_{partition_date_report}.html"
+
+    s3.put_object(
+        Bucket=output_html_s3_report_bucket,
+        Key=output_html_s3_report_key,
+        Body=template_rendered
+    )
+
+    print(f"Reporte generado en {output_html_s3_report_bucket}/{output_html_s3_report_key}")
+
+    return output_html_s3_report_key
 
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     print("to context: " + str(context))
 
-    send_email(event)
+    output_html_s3_report_key = weekly_report(event)
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('Hello from Lambda!'),
+        "sender_email": "tcueva.cloud@gmail.com",
+        "recipient_email": "tcueva.cloud@gmail.com",
+        "subject": "Weekly Earnings Report",
+        "bucket_name_message": "portfolioslake",
+        "message_html_key": output_html_s3_report_key
     }
