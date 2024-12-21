@@ -1,8 +1,4 @@
 
-
-
-
-
 class Director:
 
     def __init__(self, source_bucket, source_key):

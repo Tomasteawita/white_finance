@@ -26,6 +26,25 @@ def define_type_security(security_name):
 
     return 'Instrumento_no_identificado'
 
+def calculate_total(row):
+    """
+    Calculate the total amount of the security.
+
+    Args:
+    - row: pd.Series
+
+    Returns:
+    - float
+    """
+    print(f"Nombre: {row['Nombre']}")
+    print(f"Tipo: {row['Tipo']}")
+    print(f"Cantidad: {row['Cantidad']}")
+    print(f"Ultimo precio: {row['Ultimo Precio']}")
+
+    if row['Tipo'] in ('bono', 'obligacion_negociable', 'letra'):
+        return row['Cantidad'] * (row['Ultimo Precio'] / 100)
+    return row['Cantidad'] * row['Ultimo Precio']
+
 def structure_portfolio(html_data):
     """
     Structure the raw portfolio data and save it in a csv file
@@ -66,14 +85,14 @@ def structure_portfolio(html_data):
         "Último precio": "Ultimo Precio"
         })
 
-    df_iol_portfolio['Total'] = df_iol_portfolio['Cantidad'] \
-                                         * (df_iol_portfolio['Ultimo Precio'] / 100)
+    df_iol_portfolio['Tipo'] = df_iol_portfolio['Nombre'].apply(define_type_security)
+
+    df_iol_portfolio['Total'] = df_iol_portfolio.apply(calculate_total, axis=1)
+
 
     df_iol_portfolio = df_iol_portfolio[[
         'Ticket', 'Nombre', 'Cantidad', 
-        'Ultimo Precio', 'PPC', 'Total'
+        'Ultimo Precio', 'PPC', 'Total', 'Tipo'
         ]]
-
-    df_iol_portfolio['Tipo'] = df_iol_portfolio['Nombre'].apply(define_type_security)
 
     return df_iol_portfolio
