@@ -70,12 +70,50 @@ class Stocks(BuilderInterface):
             case _:
                 return 'Unknown Broker'
 
+    def _get_ars_usd(self, portfolio_metadata):
+        """Get the ARS to USD exchange rate"""
+
+        portfolio_metadata_list = portfolio_metadata.split('_')
+        portfolio_date = portfolio_metadata_list[-1].replace('.csv', '')
+
+        query_to_check = \
+            f"""SELECT * FROM golden.currency WHERE "date" = '{portfolio_date}'"""
+        print('Query to check')
+        with self.engine.connect() as conn:
+            df_currency = read_sql(query_to_check, conn)
+            print('Dataframe securities created')
+            print(df_currency)
+
+        if df_currency.empty:
+            return None
+        
+        ars_usd = df_currency['ars_usd'].iloc[0]
+
+        return ars_usd
+
     def build_portfolio_table(self, portfolio_metadata, df_portfolio):
         """Build the portfolio table"""
+
+        def pesificar(row):
+            print(f"Ticket antes de pesificar {row['Ticket']}")
+            if row['Ticket'].endswith('.US'):
+                return row['Total'] * ars_usd
+            
+            print('Ya pesificado')
+            print(f'Precio {row["Total"]}')
+            return row['Total']
+
         portfolio_metadata_list = portfolio_metadata.split('_')
         portfolio_name = self._set_broker_name(portfolio_metadata_list[0])
         portfolio_date = portfolio_metadata_list[-1].replace('.csv', '')
+
+        # calculo el total del portfolio
+        ars_usd = self._get_ars_usd(portfolio_metadata)
+        print('ARS to USD')
+        print(ars_usd)
+        df_portfolio['Total'] = df_portfolio.apply(pesificar, axis=1)
         total_portfolio = df_portfolio['Total'].sum()
+
         portfolio_data = {
             'broker_name': [portfolio_name], 
             'total_investment': [total_portfolio], 
