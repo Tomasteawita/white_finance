@@ -19,6 +19,31 @@ import json
 warnings.filterwarnings("ignore")
 
 
+def _get_ars_usd(partition_date_first, partition_date_last, engine):
+    """Get the ARS to USD exchange rate"""
+
+
+    query_to_check = \
+        f"""SELECT ars_usd, "date"
+            FROM golden.currency 
+            WHERE "date" between '{partition_date_first}' and '{partition_date_last}'"""
+    print('Query to check')
+
+    with engine.connect() as conn:
+        df_currency = pd.read_sql(query_to_check, conn)
+        print('Dataframe securities created')
+        print(df_currency)
+
+    if df_currency.empty:
+        return None
+    
+    # devuelvo el primer y ultimo valor de la columna ars_usd
+    return (df_currency['ars_usd'].iloc[0], df_currency['ars_usd'].iloc[-1])
+
+    # ars_usd = df_currency['ars_usd'].iloc[0]
+
+    # return ars_usd
+
 def set_queries(workings_days_week, broker_name, partition_date_last, partition_date_first):
     """
     Setea la query para extraer:
@@ -50,35 +75,61 @@ def set_queries(workings_days_week, broker_name, partition_date_last, partition_
         order by stocks.partition_date;
         """
 
-def calculate_profits(df_securities):
+def calculate_profits(df_securities, ars_usd):
     """
     Calcula las ganancias y perdidas de cada activo
     de una cartera de inversiones.
     """
+    print('Calculo de profits')
     df_securities['average_purchase_price'] = df_securities.apply(
         lambda row: row['average_purchase_price'] / 100 if row['financial_instrument_type'] == 'renta fija' else row['average_purchase_price'],
         axis=1
     )
+
+    df_securities['average_purchase_price'] = df_securities.apply(
+        lambda row: row['average_purchase_price'] * ars_usd if row['ticket'].endswith('.US') else row['average_purchase_price'],
+        axis=1
+    )
+
     df_securities['last_price'] = df_securities.apply(
         lambda row: row['last_price'] / 100 if row['financial_instrument_type'] == 'renta fija' else row['last_price'],
         axis=1
     )
+
+    df_securities['last_price'] = df_securities.apply(
+        lambda row: row['last_price'] * ars_usd if row['ticket'].endswith('.US') else row['last_price'],
+        axis=1
+    )
+
     df_securities['ars_total'] = df_securities['last_price'] * df_securities['quantity']
     df_securities['ars_profit'] = df_securities['ars_total'] - (df_securities['average_purchase_price'] * df_securities['quantity'])
     df_securities['percentage_profit'] = (df_securities['ars_profit'] / (df_securities['average_purchase_price'] * df_securities['quantity'])) * 100
 
+    # imprimo el dataframe con las ganancias y perdidas
+    print(df_securities)
+
     return df_securities
 
-def gen_broker_report(df_securities, broker_name):
+def gen_broker_report(df_securities, broker_name, engine):
     """
     Calcula las ganancias y perdidas de una cartera de inversiones
     especifica de un broker en particular.
     """
+    print(f'Calculo el reporte de {broker_name}')
     profit_dict = {
         'name': broker_name,
         'first_partition_date': df_securities['partition_date'].iloc[0],
         'last_partition_date': df_securities['partition_date'].iloc[-1]
     }
+
+    ars_usd_first, ars_usd_last = _get_ars_usd(
+        profit_dict['first_partition_date'],
+        profit_dict['last_partition_date'],
+        engine
+    )
+
+    print(f'ARS USD first: {ars_usd_first}')
+    print(f'ARS USD last: {ars_usd_last}')
 
     df_securities_first_day = df_securities[
         df_securities['partition_date'] == profit_dict['first_partition_date']
@@ -87,8 +138,10 @@ def gen_broker_report(df_securities, broker_name):
         df_securities['partition_date'] == profit_dict['last_partition_date']
     ]
 
-    df_securities_first_day = calculate_profits(df_securities_first_day)
-    df_securities_last_day = calculate_profits(df_securities_last_day)
+    df_securities_first_day = calculate_profits(df_securities_first_day, ars_usd_first)
+    df_securities_last_day = calculate_profits(df_securities_last_day, ars_usd_last)
+
+    print('profits calculados')
 
     df_securities_merged = pd.merge(df_securities_first_day, df_securities_last_day, on='ticket', suffixes=('_first', '_last'))
     df_securities_merged['ars_profit_diff'] = df_securities_merged['ars_profit_last'] - df_securities_merged['ars_profit_first']
@@ -116,6 +169,8 @@ def gen_broker_report(df_securities, broker_name):
     profit_dict['ars_profit_diff'] = round(profit_dict['ars_profit_last'] - profit_dict['ars_profit_first'],2)
 
     profit_dict['percentage_profit_diff'] = round(((profit_dict['ars_profit_last'] - profit_dict['ars_profit_first']) / profit_dict['ars_profit_first']) * 100,2)
+
+    print('fin de calculo de reporte')
 
     return profit_dict
 
@@ -185,7 +240,7 @@ def weekly_report(event):
         df_securities_iol = pd.read_sql(iol_query_profit_per_securitie, conn)
 
     context['brokers'] = [
-        gen_broker_report(df, broker_name) for df, broker_name in zip(
+        gen_broker_report(df, broker_name, engine) for df, broker_name in zip(
             [df_securities_bullma, df_securities_iol],
             ['Bull Market', 'Invertir Online']
         )
@@ -196,17 +251,21 @@ def weekly_report(event):
     )
 
     context = gen_total_profit(df_reports, context)
+    print('Total profits calculated')
     # deberia estar en el key lambda_path/reports/template.html
     s3 = boto3.client('s3')
+    print('S3 client created')
     bucket_name = event.get('bucket_report')
     template_key = event.get('key_report_template')
     template_object = s3.get_object(Bucket=bucket_name, Key=template_key)
     template_html_content = template_object['Body'].read().decode('utf-8')
+    print('Template readed')
 
     template_rendered = gen_html_report(
         context,
         template_html_content
     )
+    print('Template rendered')
 
     output_html_s3_report_bucket = event.get('bucket_report')
     output_html_s3_report_key = f"lambdas_path/reports/earnings_report_{partition_date_report}.html"
