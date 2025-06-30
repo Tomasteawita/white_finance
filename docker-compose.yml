@@ -1,6 +1,4 @@
-# docker-compose.yml
 version: '3'
-
 services:
   postgres:
     container_name: bifi_analytics-postgres
@@ -12,8 +10,18 @@ services:
     env_file:
       - .env
     volumes:
-      - gold_test_clone:/var/lib/postgresql/data
-
-volumes:
-  gold_test_clone:
-    external: true
+      - ./data/postgres:/var/lib/postgresql/data
+  notebooks:
+    container_name: bifi_analytics-notebooks
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8888:8888
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data/raw:/home/jovyan/data
