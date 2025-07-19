@@ -127,12 +127,14 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!')
+        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!'),
+        'bucket': target_bucket,
+        'key': target_key_historico
     }
 
-{
-    "statusCode": 200,
-    "body": "Archivo copiado a raw",
-    "bucket": "withefinance-raw",
-    "key": "cuenta_corriente/partition_date=2025-07-18/cuenta_corriente-20250718.csv"
-}
+# {
+#     "statusCode": 200,
+#     "body": "Archivo copiado a raw",
+#     "bucket": "withefinance-raw",
+#     "key": "cuenta_corriente/partition_date=2025-07-18/cuenta_corriente-20250718.csv"
+# }

@@ -3,8 +3,27 @@ Genera un dataframe con el restulado de ganancias/perdidas de operaciones de com
 a partir de un archivo CSV, proveniente del excel que brinda BullMarket de nuestra cuenta corriente.
 """
 import pandas as pd
+import boto3
+import io
 
-def calculat_profit_and_loss(ruta_archivo_csv: str):
+
+def set_news_operations(df, max_date_yyyy_mm_dd):
+    """
+    Filtra las operaciones nuevas (novedades) que son posteriores a la fecha máxima dada.
+
+    Args:
+        df (pd.DataFrame): DataFrame con las operaciones.
+        max_date_yyyy_mm_dd (str): Fecha máxima en formato 'YYYY-MM-DD'.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado con las novedades.
+    """
+    max_date = pd.to_datetime(max_date_yyyy_mm_dd)
+    df['Operado'] = pd.to_datetime(df['Operado'], errors='coerce')
+    return df[df['Operado'] > max_date]
+
+
+def lambda_handler(event, context):
     """
     Calcula la ganancia o pérdida realizada para cada operación de venta
     de activos a partir de un archivo CSV de cuenta corriente.
@@ -15,22 +34,33 @@ def calculat_profit_and_loss(ruta_archivo_csv: str):
     Returns:
         pandas.DataFrame: Un DataFrame con el resultado de cada venta.
     """
-    # 1. Cargar y preparar los datos del CSV
-    df = pd.read_csv(
-        ruta_archivo_csv,
-        delimiter=',',  # El delimitador parece ser punto y coma
-        decimal='.'     # Usar coma como separador decimal
-    )
+    bucket = event.get('bucket')
+    key = event.get('key')
+
+    s3 = boto3.client('s3')
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    csv_data = obj['Body'].read()
+
+    df_cuenta_corriente_historico = pd.read_csv(io.BytesIO(csv_data), 
+                     delimiter=',',  # El delimitador parece ser coma
+                     decimal='.')    # Usar punto como separador decimal
+    obj = s3.get_object(Bucket= 'whitefinance-analytics', Key='profit.csv')
+    csv_data = obj['Body'].read()
+    df_profit = pd.read_csv(io.BytesIO(csv_data), 
+                     delimiter=',',  # El delimitador parece ser coma
+                     decimal='.')    # Usar punto como separador decimal
+    # me quedo
+    
 
     # Convertir columnas a los tipos de datos correctos
-    df['Operado'] = pd.to_datetime(df['Operado'], format='mixed', dayfirst=True, errors='coerce')
+    df_cuenta_corriente_historico['Operado'] = pd.to_datetime(df_cuenta_corriente_historico['Operado'], format='mixed', dayfirst=True, errors='coerce')
     # Asegurarse que las columnas numéricas sean floats
     for col in ['Cantidad', 'Precio', 'Importe']:
-        if df[col].dtype == 'object':
-            df[col] = df[col].str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
+        if df_cuenta_corriente_historico[col].dtype == 'object':
+            df_cuenta_corriente_historico[col] = df_cuenta_corriente_historico[col].str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
 
     # 2. Filtrar solo operaciones de compra y venta
-    operaciones = df[df['Comprobante'].isin(['COMPRA NORMAL', 'VENTA'])].copy()
+    operaciones = df_cuenta_corriente_historico[df_cuenta_corriente_historico['Comprobante'].isin(['COMPRA NORMAL', 'VENTA'])].copy()
     operaciones = operaciones.sort_values(by='Operado', ascending=True)
 
     # 3. Lógica principal: Iterar y calcular
@@ -104,21 +134,12 @@ def calculat_profit_and_loss(ruta_archivo_csv: str):
 
 
     print("\n¡Cálculo finalizado!")
-    return pd.DataFrame(resultados)
+    df_results =  pd.DataFrame(resultados)
 
-# --- EJECUCIÓN DEL SCRIPT ---
-# Reemplaza 'ruta/a/tu/archivo.csv' con la ruta real de tu archivo
-# Como subiste el archivo, podemos usar su nombre directamente.
-nombre_archivo = '/home/jovyan/data/cuenta_corriente_historic.csv'
-resultados_df = calculat_profit_and_loss(nombre_archivo)
-
-# Mostrar el DataFrame con los resultados
-if isinstance(resultados_df, pd.DataFrame) and not resultados_df.empty:
-    print("\n--- Resumen de Ganancias y Pérdidas Realizadas ---")
-    # Formatear los números para mejor lectura
-    pd.options.display.float_format = '{:,.2f}'.format
-    print(resultados_df.to_string()) # Usamos to_string para ver todas las filas y columnas
-else:
-    print("\nNo se encontraron operaciones de venta para calcular o hubo un error.")
-    if not isinstance(resultados_df, pd.DataFrame):
-        print(resultados_df) # Muestra el mensaje de error
+    print(f"Se procesaron {len(resultados)} operaciones de venta.")
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!'),
+        # 'bucket': target_bucket,
+        # 'key': target_key_historico
+    }
