@@ -5,27 +5,11 @@ a partir de un archivo CSV, proveniente del excel que brinda BullMarket de nuest
 import pandas as pd
 import boto3
 import io
-
-
-def set_news_operations(df, max_date_yyyy_mm_dd):
-    """
-    Filtra las operaciones nuevas (novedades) que son posteriores a la fecha máxima dada.
-
-    Args:
-        df (pd.DataFrame): DataFrame con las operaciones.
-        max_date_yyyy_mm_dd (str): Fecha máxima en formato 'YYYY-MM-DD'.
-
-    Returns:
-        pd.DataFrame: DataFrame filtrado con las novedades.
-    """
-    max_date = pd.to_datetime(max_date_yyyy_mm_dd)
-    df['Operado'] = pd.to_datetime(df['Operado'], errors='coerce')
-    return df[df['Operado'] > max_date]
-
+import json
 
 def lambda_handler(event, context):
     """
-    Calcula la ganancia o pérdida realizada para cada operación de venta
+    Calcula la ganancia o perdida realizada para cada operacion de venta
     de activos a partir de un archivo CSV de cuenta corriente.
 
     Args:
@@ -36,34 +20,49 @@ def lambda_handler(event, context):
     """
     bucket = event.get('bucket')
     key = event.get('key')
-
     s3 = boto3.client('s3')
+
     obj = s3.get_object(Bucket=bucket, Key=key)
     csv_data = obj['Body'].read()
+    df_cuenta_corriente_historico = pd.read_csv(
+                        io.BytesIO(csv_data),
+                        delimiter=',',  
+                        decimal='.'
+                    )
 
-    df_cuenta_corriente_historico = pd.read_csv(io.BytesIO(csv_data), 
-                     delimiter=',',  # El delimitador parece ser coma
-                     decimal='.')    # Usar punto como separador decimal
     obj = s3.get_object(Bucket= 'whitefinance-analytics', Key='profit.csv')
     csv_data = obj['Body'].read()
-    df_profit = pd.read_csv(io.BytesIO(csv_data), 
-                     delimiter=',',  # El delimitador parece ser coma
-                     decimal='.')    # Usar punto como separador decimal
-    # me quedo
-    
+    df_profit = pd.read_csv(
+            io.BytesIO(csv_data),
+            delimiter=',',
+            decimal='.'
+        )
+    # Me quedo con la fecha maxima de la columna 'Fecha Venta' del df_profit
+    fecha_maxima = pd.to_datetime(df_profit['Fecha Venta']).max().date()
+    print(f"Fecha maxima de venta registrada: {fecha_maxima}")
 
-    # Convertir columnas a los tipos de datos correctos
+    # Filtrar el df_cuenta_corriente_historico para que solo tenga operaciones mayores a la fecha maxima
     df_cuenta_corriente_historico['Operado'] = pd.to_datetime(df_cuenta_corriente_historico['Operado'], format='mixed', dayfirst=True, errors='coerce')
-    # Asegurarse que las columnas numéricas sean floats
+    df_cuenta_corriente_historico = df_cuenta_corriente_historico[df_cuenta_corriente_historico['Operado'].dt.date > fecha_maxima]
+    print(f"Se encontraron {len(df_cuenta_corriente_historico)} nuevas operaciones desde la ultima fecha de venta registrada.")
+
+    if df_cuenta_corriente_historico.empty:
+        print("No hay nuevas operaciones para procesar.")
+        return {
+            'statusCode': 200,
+            'body': json.dumps('No se encontraron nuevas operaciones para procesar.')
+        }
+
+    # Asegurarse que las columnas numericas sean floats
     for col in ['Cantidad', 'Precio', 'Importe']:
         if df_cuenta_corriente_historico[col].dtype == 'object':
-            df_cuenta_corriente_historico[col] = df_cuenta_corriente_historico[col].str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
+            df_cuenta_corriente_historico[col] = df_cuenta_corriente_historico[col].str.replace(',', '', regex=False).astype(float)
 
     # 2. Filtrar solo operaciones de compra y venta
     operaciones = df_cuenta_corriente_historico[df_cuenta_corriente_historico['Comprobante'].isin(['COMPRA NORMAL', 'VENTA'])].copy()
     operaciones = operaciones.sort_values(by='Operado', ascending=True)
 
-    # 3. Lógica principal: Iterar y calcular
+    # 3. Logica principal: Iterar y calcular
     cartera = {}  # Diccionario para seguir el estado de cada activo
                     # Ejemplo: {'GGAL': {'cantidad': 100, 'costo_total': 45000}}
     resultados = [] # Lista para guardar los resultados de las ventas
@@ -78,7 +77,7 @@ def lambda_handler(event, context):
 
         # Inicializar el activo en la cartera si no existe
         if especie not in cartera and op['Comprobante'] == 'VENTA':
-            print(f"ADVERTENCIA: Se intentó vender {cantidad} de {especie}, pero no hay registro de compra. Se omitirá.")
+            print(f"ADVERTENCIA: Se intento vender {cantidad} de {especie}, pero no hay registro de compra. Se omitira.")
             continue
 
         elif especie not in cartera:
@@ -94,16 +93,16 @@ def lambda_handler(event, context):
         # Si es una VENTA
         elif op['Comprobante'] == 'VENTA':
             if abs(cartera[especie]['cantidad_total']) < abs(cantidad):
-                print(f"ADVERTENCIA: Se intentó vender {cantidad} de {especie}, pero solo hay {cartera[especie]['cantidad_total']} en cartera. Se omitirá.")
+                print(f"ADVERTENCIA: Se intento vender {cantidad} de {especie}, pero solo hay {cartera[especie]['cantidad_total']} en cartera. Se omitira.")
                 cartera.pop(especie, None)
-                print(f"Se eliminó {especie} de la cartera por falta de cantidad suficiente.")
+                print(f"Se elimino {especie} de la cartera por falta de cantidad suficiente.")
                 continue
 
             # Calcular el Precio Promedio de Compra (PPC) al momento de la venta
             if cartera[especie]['cantidad_total'] > 0:
                 ppc = cartera[especie]['costo_total'] / cartera[especie]['cantidad_total']
             else:
-                ppc = 0 # Evitar división por cero
+                ppc = 0 # Evitar division por cero
 
             # Calcular el costo de los activos vendidos
             costo_de_venta = ppc * cantidad
@@ -112,7 +111,7 @@ def lambda_handler(event, context):
 
             print(f"Venta: {cantidad:.2f} de {especie} a ${precio_op:.2f}. PPC: ${ppc:.2f}. Resultado: ${ganancia_perdida:.2f}")
 
-            # Registrar el resultado de la operación
+            # Registrar el resultado de la operacion
             resultados.append({
                 'Fecha Venta': op['Operado'].date(),
                 'Activo': especie,
@@ -123,23 +122,45 @@ def lambda_handler(event, context):
                 'Ganancia/Perdida ($)': ganancia_perdida
             })
 
-            # Actualizar la cartera después de la venta
+            # Actualizar la cartera despues de la venta
             cartera[especie]['cantidad_total'] -= cantidad
             cartera[especie]['costo_total'] -= costo_de_venta
 
-            # Si se vendió todo, se puede resetear el costo para evitar errores de flotantes
-            if cartera[especie]['cantidad_total'] < 1e-9: # Un número muy pequeño
+            # Si se vendio todo, se puede resetear el costo para evitar errores de flotantes
+            if cartera[especie]['cantidad_total'] < 1e-9: # Un numero muy pequeño
                 cartera[especie]['cantidad_total'] = 0
                 cartera[especie]['costo_total'] = 0
 
 
-    print("\n¡Cálculo finalizado!")
+    print("\n¡Calculo finalizado!")
     df_results =  pd.DataFrame(resultados)
 
     print(f"Se procesaron {len(resultados)} operaciones de venta.")
+    if df_results.empty:
+        print("No se encontraron ventas para procesar.")
+        return {
+            'statusCode': 200,
+            'body': json.dumps('No se encontraron ventas para procesar.')
+        }
+    
+    print(df_results)
+
+    # Hago un union entre df_profit y df_results
+    df_final = pd.concat([df_profit, df_results], ignore_index=True)
+
+    print('df_final:')
+    print(df_final)
+
+    # Escribo el df_final en el bucket whitefinance-analytics, en el archivo profit.csv
+    target_bucket = 'whitefinance-analytics'
+    target_key_historico = 'profit.csv'
+    csv_buffer = io.StringIO()
+    df_final.to_csv(csv_buffer, index=False, decimal='.', float_format='%.2f')
+    s3.put_object(Bucket=target_bucket, Key=target_key_historico, Body=csv_buffer.getvalue())
+    print(f"Archivo {target_key_historico} actualizado en el bucket {target_bucket}.")
     return {
         'statusCode': 200,
-        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!'),
-        # 'bucket': target_bucket,
-        # 'key': target_key_historico
+        'body': json.dumps('Proceso de actualizacion de historicos completado exitosamente!'),
+        'bucket': 'whitefinance-analytics',
+        'key': 'profit.csv'
     }
