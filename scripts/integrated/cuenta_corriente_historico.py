@@ -94,23 +94,34 @@ def lambda_handler(event, context):
 
     # --- 4. Filtrar para obtener solo las novedades ---
     if not df_historical.empty:
-        # Obtener la fecha máxima de operación del DataFrame histórico
-        max_historical_date = df_historical['Operado'].max()
-        print(f"Fecha máxima en el histórico: {max_historical_date}")
-        
-        # Filtrar el DataFrame nuevo para quedarse con fechas posteriores
-        novedades_df = df_new[df_new['Operado'] > max_historical_date].copy()
-        print(f"Se encontraron {len(novedades_df)} novedades.")
+        df_final = pd.merge(
+            df_new,
+            df_historical,
+            on=['Liquida', 'Operado', 'Comprobante', 'Numero'],
+            how='outer',
+            indicator=True
+        )
 
-        # Combinar el histórico con las novedades
-        df_final = pd.concat([df_historical, novedades_df], ignore_index=True)
+        # hag un coalesce entre las columnas Cantidad_x,Especie_x,Precio_x,Importe_x,Saldo_x,Referencia_x,Cantidad_y,Especie_y,Precio_y,Importe_y,Saldo_y,Referencia_y
+        df_final['Cantidad'] = df_final['Cantidad_x'].combine_first(df_final['Cantidad_y'])
+        df_final['Especie'] = df_final['Especie_x'].combine_first(df_final['Especie_y'])
+        df_final['Precio'] = df_final['Precio_x'].combine_first(df_final['Precio_y'])
+        df_final['Importe'] = df_final['Importe_x'].combine_first(df_final['Importe_y'])
+        df_final['Saldo'] = df_final['Saldo_x'].combine_first(df_final['Saldo_y'])
+        df_final['Referencia'] = df_final['Referencia_x'].combine_first(df_final['Referencia_y'])
+        df_final = df_final.drop(columns=['_merge', 'Cantidad_x', 'Especie_x', 'Precio_x', 'Importe_x', 'Saldo_x', 'Referencia_x', 'Cantidad_y', 'Especie_y', 'Precio_y', 'Importe_y', 'Saldo_y', 'Referencia_y'])
+
+        # si la cantidad de filaes en df_final es mayor que la cantidad de filas de df_historical, significa que hay novedades
+        novedades_count = len(df_final) > len(df_historical)
     else:
         # Si no hay histórico, el DataFrame final es simplemente el nuevo DataFrame
         df_final = df_new
+        novedades_count = True  # Siempre hay novedades si no hay histórico
         print("No hay datos históricos; el archivo nuevo se convierte en la base del histórico.")
 
     # --- 5. Escribir el DataFrame final en el bucket 'integrated' ---
-    if not df_final.empty:
+
+    if novedades_count:
         # Convertir DataFrame a formato CSV en memoria
         csv_buffer = io.StringIO()
         df_final.to_csv(csv_buffer, index=False)
@@ -127,12 +138,7 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!')
+        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!'),
+        'bucket': target_bucket,
+        'key': target_key_historico
     }
-
-{
-    "statusCode": 200,
-    "body": "Archivo copiado a raw",
-    "bucket": "withefinance-raw",
-    "key": "cuenta_corriente/partition_date=2025-07-18/cuenta_corriente-20250718.csv"
-}
