@@ -5,10 +5,12 @@
     "IngestCuentaCorrienteCurrentDate": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
-      "Arguments": {
+      "Parameters": {
         "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3Ingest-Raw:$LATEST",
-        "Payload": "{% $states.input %}"
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "Payload.$": "$.Payload"
       },
       "Retry": [
         {
@@ -29,10 +31,12 @@
     "GenCuentaCorrienteHistorical": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
-      "Arguments": {
+      "Parameters": {
         "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3InsertCuentaCorrienteHistorico-Integrated:$LATEST",
-        "Payload": "{% $states.input %}"
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "Payload.$": "$.Payload"
       },
       "Retry": [
         {
@@ -53,10 +57,9 @@
     "GenHistoricalProfit": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
-      "Arguments": {
+      "Parameters": {
         "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3InsertProfitHistorico-Analytics:$LATEST",
-        "Payload": "{% $states.input %}"
+        "Payload.$": "$"
       },
       "Retry": [
         {
@@ -74,6 +77,5 @@
       ],
       "End": true
     }
-  },
-  "QueryLanguage": "JSONata"
+  }
 }

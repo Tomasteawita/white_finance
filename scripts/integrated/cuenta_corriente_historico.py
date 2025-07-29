@@ -8,6 +8,13 @@ from datetime import datetime
 # Inicializar el cliente de S3 fuera del handler para reutilizar la conexión
 s3_client = boto3.client('s3')
 
+def set_context_event(event):
+    """Si el contexto es de un stepFunction, entonces event va a ser event['Payload']"""
+    # si event tiene la keu Pyload, entonces es un stepFunction
+    if 'Payload' in event:
+        return event['Payload']
+    return event
+
 def lambda_handler(event, context):
     """
     Procesa un archivo CSV de cuenta corriente, lo compara con datos históricos
@@ -22,10 +29,13 @@ def lambda_handler(event, context):
     4. Concatena los datos históricos con las novedades.
     5. Escribe el DataFrame actualizado y consolidado en 'withefinance-integrated'.
     """
+    # imprimo el evento recibido para depuración
+    print("Evento recibido: " + json.dumps(event, indent=2))
+    event = set_context_event(event)
 
     # --- 1. Extraer parámetros del evento ---
-    source_bucket = event['bucket']
-    source_key = event['key']
+    source_bucket = event['bucket-insertion']
+    source_key = event['key-insertion']
     print(f"Iniciando proceso para: s3://{source_bucket}/{source_key}")
 
     # --- 2. Leer el nuevo CSV y convertirlo a DataFrame ---

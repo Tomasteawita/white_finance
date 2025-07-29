@@ -7,6 +7,13 @@ import boto3
 import io
 import json
 
+def set_context_event(event):
+    """Si el contexto es de un stepFunction, entonces event va a ser event['Payload']"""
+    # si event tiene la keu Pyload, entonces es un stepFunction
+    if 'Payload' in event:
+        return event['Payload']
+    return event
+
 def lambda_handler(event, context):
     """
     Calcula la ganancia o perdida realizada para cada operacion de venta
@@ -18,6 +25,7 @@ def lambda_handler(event, context):
     Returns:
         pandas.DataFrame: Un DataFrame con el resultado de cada venta.
     """
+    event = set_context_event(event)
     bucket = event.get('bucket')
     key = event.get('key')
     s3 = boto3.client('s3')
