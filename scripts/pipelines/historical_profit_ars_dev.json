@@ -26,7 +26,54 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "GenCuentaCorrienteHistorical"
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ChoiceAlert",
+          "ResultPath": "$.Error"
+        }
+      ],
+      "Next": "ChoiceAlert"
+    },
+    "ChoiceAlert": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "SendAlertEmailIngestCuentaCorriente",
+          "Variable": "$.Error",
+          "StringEqualsPath": "$.States.TaskFailed"
+        }
+      ],
+      "Default": "GenCuentaCorrienteHistorical"
+    },
+    "SendAlertEmailIngestCuentaCorriente": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload": {
+          "sender_email": "tcueva.cloud@gmail.com",
+          "recipient_email": "tcueva.cloud@gmail.com",
+          "subject": "Rompio state IngestCuentaCorriente",
+          "message": "Rompio la state de ingesta de la cuenta corriente"
+        },
+        "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-EmailSender-Alert:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
     },
     "GenCuentaCorrienteHistorical": {
       "Type": "Task",
@@ -51,24 +98,38 @@
           "BackoffRate": 2,
           "JitterStrategy": "FULL"
         }
+      ],"Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ChoiceAlertGenHistoricalCuentaCorriente",
+          "ResultPath": "$.Error"
+        }
       ],
-      "Next": "Choice"
+      "Next": "ChoiceAlertGenHistoricalCuentaCorriente"
     },
-    "Choice": {
+    "ChoiceAlertGenHistoricalCuentaCorriente": {
       "Type": "Choice",
       "Choices": [
         {
-          "Next": "SendEmailCuentaCorrienteHistoricalerror"
+          "Next": "SendAlertEmailGenCuentaCorrienteHistorical",
+          "Variable": "$.Error",
+          "StringEqualsPath": "$.States.TaskFailed"
         }
       ],
-      "Default": "Parallel"
+      "Default": "GenHistoricalProfit"
     },
-    "SendEmailCuentaCorrienteHistoricalerror": {
+    "SendAlertEmailGenCuentaCorrienteHistorical": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "OutputPath": "$.Payload",
       "Parameters": {
-        "Payload.$": "$"
+        "Payload": {
+          "sender_email": "tcueva.cloud@gmail.com",
+          "recipient_email": "tcueva.cloud@gmail.com",
+          "subject": "Rompio state GenCuentaCorrienteHistorical",
+          "message": "Rompio la state de generacion de cuenta corriente historica"
+        },
+        "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-EmailSender-Alert:$LATEST"
       },
       "Retry": [
         {
@@ -86,64 +147,95 @@
       ],
       "End": true
     },
-    "Parallel": {
-      "Type": "Parallel",
-      "Branches": [
+    "GenHistoricalProfit": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3InsertProfitHistorico-Analytics:$LATEST",
+        "Payload.$": "$"
+      },
+      "Retry": [
         {
-          "StartAt": "GenHistoricalProfit",
-          "States": {
-            "GenHistoricalProfit": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3InsertProfitHistorico-Analytics:$LATEST",
-                "Payload.$": "$"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException",
-                    "Lambda.TooManyRequestsException"
-                  ],
-                  "IntervalSeconds": 1,
-                  "MaxAttempts": 3,
-                  "BackoffRate": 2,
-                  "JitterStrategy": "FULL"
-                }
-              ],
-              "End": true
-            }
-          }
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],"Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Choice Alert Gen Historical Profit",
+          "ResultPath": "$.Error"
+        }
+      ],
+      "Next": "Choice Alert Gen Historical Profit"
+    },
+    "Choice Alert Gen Historical Profit": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "SendAlertEmailGenHistoricalProfit",
+          "Variable": "$.Error",
+          "StringEqualsPath": "$.States.TaskFailed"
+        }
+      ],
+      "Default": "SendEmailSuccesGenHistorical"
+    },
+    "SendAlertEmailGenHistoricalProfit": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload": {
+          "sender_email": "tcueva.cloud@gmail.com",
+          "recipient_email": "tcueva.cloud@gmail.com",
+          "subject": "Rompio state GenCuentaCorrienteHistorical",
+          "message": "Rompio la state de generacion de cuenta profit historico"
         },
+        "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-EmailSender-Alert:$LATEST"
+      },
+      "Retry": [
         {
-          "StartAt": "SendEmailCuentaCorrienteHistoricalSucces",
-          "States": {
-            "SendEmailCuentaCorrienteHistoricalSucces": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "OutputPath": "$.Payload",
-              "Parameters": {
-                "Payload.$": "$"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException",
-                    "Lambda.TooManyRequestsException"
-                  ],
-                  "IntervalSeconds": 1,
-                  "MaxAttempts": 3,
-                  "BackoffRate": 2,
-                  "JitterStrategy": "FULL"
-                }
-              ],
-              "End": true
-            }
-          }
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    },
+    "SendEmailSuccesGenHistorical": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-EmailSender-Alert:$LATEST"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
         }
       ],
       "End": true

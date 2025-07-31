@@ -7,7 +7,7 @@ $s3Bucket = "withefinance-raw"
 $s3Prefix = "data/in"
 
 # ARN completo de tu máquina de estado
-# $stateMachineArn = "arn:aws:states:us-east-2:515966533232:stateMachine:your-state-machine-name"
+$stateMachineArn = "arn:aws:states:us-east-2:515966533232:stateMachine:WitheFinance-Historical-Profits"
 # --------------------
 # Le pido la fecha al usuario
 $fecha_yyyy_mm_dd = Read-Host "Ingrese la fecha (formato YYYY-MM-DD)"
@@ -25,9 +25,9 @@ $excelFileName = "Cuenta Corriente PESOS $fecha_dd_mm_yy.xlsx"
 $csvFileName = "cuenta_corriente-$fecha_yyyy_mm_dd_formateada.csv"
 
 
-..\..\..\..\venv\Scripts\activate
+.\venv\Scripts\activate
 Write-Host "📊 Ejecutando script de Python para validar el excel y pasarlo a csv '$excelFileName' a '$csvFileName'..."
-python ..\validators\main.py `
+python .\scripts\raw\ingest\validators\main.py `
     --file_path "C:\Users\tomas\$localDir\$excelFileName" `
     --output_path "C:\Users\tomas\$localDir\$csvFileName" `
     --validator_name "cuenta_corriente"
@@ -89,21 +89,23 @@ Write-Host $jsonInput -ForegroundColor Gray
 
 # Paso 4: Ejecutar la Step Function
 Write-Host "⚙️ Iniciando la ejecución de la Step Function..." -ForegroundColor Cyan
-# $executionArn = aws stepfunctions start-execution `
-#     --state-machine-arn $stateMachineArn `
-#     --input $jsonInput `
-#     --query "executionArn" `
-#     --output text
+$executionArn = aws stepfunctions start-execution `
+    --state-machine-arn $stateMachineArn `
+    --input $jsonInput `
+    --query "executionArn" `
+    --output text
 
-# if ($LASTEXITCODE -eq 0) {
-#     Write-Host "✅ ¡Éxito! Step Function iniciada." -ForegroundColor Green
-#     Write-Host "   Execution ARN: $executionArn"
-# }
-# else {
-#     Write-Host "❌ Error: Falló el inicio de la Step Function." -ForegroundColor Red
-#     exit 1
-# }
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "✅ ¡Éxito! Step Function iniciada." -ForegroundColor Green
+    Write-Host "   Execution ARN: $executionArn"
+}
+else {
+    Write-Host "❌ Error: Falló el inicio de la Step Function." -ForegroundColor Red
+    exit 1
+}
 
 Remove-Item "C:\Users\tomas\$localDir\cuenta_corriente-*.csv" -Force -ErrorAction SilentlyContinue
 Remove-Item "C:\Users\tomas\$localDir\Cuenta Corriente PESOS *.xlsx" -Force -ErrorAction SilentlyContinue
 Write-Host "🗑️ Archivos locales eliminados." -ForegroundColor Green
+deactivate
+Write-Host "✅ Proceso completado." -ForegroundColor Green
