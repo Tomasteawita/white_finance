@@ -107,3 +107,13 @@ La step function que se encuentra en el directorio de pipelines, se ejecuta con 
 ```
 
 Lo importante es que la clave Records[0][S3][Bucket][Name] y Records[0][S3][object][key] tengan los valores del bucket de la data cruda y la key sea la del data/in
+
+# Paso a paso para la obtención del profit historico
+
+1. Decargar cuenta corriente en pesos de BullMarket
+2. Alojar en el directorio C:\Users\usuario\withe-finance-ingest
+3. Ejecutar el script ingest_cuenta_corriente.ps1 desde el directorio raiz:
+   1. .".\scripts\raw\ingest\ingest_cuenta_corriente.ps1"
+4. Verificar que todo salió ok por el mail (ver casilla de spam)
+5. Descargar el profit desde el bucket whitefinance-analytics path profit.csv
+6. Para hacer hacer el análisis de datos, utilizar el path de jupyter http://127.0.0.1:8888/lab, despues de ejecutar el docker-compose up --build

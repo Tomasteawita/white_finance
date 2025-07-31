@@ -1,27 +1,28 @@
 version: '3'
 services:
-  postgres:
-    container_name: white_finance-postgres
-    image: 'postgres:15'
-    hostname: ${POSTGRE_HOST}
-    ports:
-      - 5432:5432
-    command: "-p 5432"
-    env_file:
-      - .env
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+  # postgres:
+  #   container_name: white_finance-postgres
+  #   image: 'postgres:15'
+  #   hostname: ${POSTGRE_HOST}
+  #   ports:
+  #     - 5432:5432
+  #   command: "-p 5432"
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./data/postgres:/var/lib/postgresql/data
   notebooks:
     container_name: white_finance-notebooks
     build:
       context: .
       dockerfile: Dockerfile
+    restart: always
     ports:
       - 8888:8888
     env_file:
       - .env
-    depends_on:
-      - postgres
+    # depends_on:
+    #   - postgres
     volumes:
       - ./notebooks:/home/jovyan/work
       - ./data/raw:/home/jovyan/data

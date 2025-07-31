@@ -9,9 +9,7 @@
         "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3Ingest-Raw:$LATEST",
         "Payload.$": "$"
       },
-      "ResultSelector": {
-        "Payload.$": "$.Payload"
-      },
+      "ResultSelector": { "Payload.$": "$.Payload" },
       "Retry": [
         {
           "ErrorEquals": [
@@ -35,9 +33,7 @@
         "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3InsertCuentaCorrienteHistorico-Integrated:$LATEST",
         "Payload.$": "$"
       },
-      "ResultSelector": {
-        "Payload.$": "$.Payload"
-      },
+      "ResultSelector": { "Payload.$": "$.Payload" },
       "Retry": [
         {
           "ErrorEquals": [
@@ -60,6 +56,35 @@
       "Parameters": {
         "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-S3InsertProfitHistorico-Analytics:$LATEST",
         "Payload.$": "$"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "SendEmailFinallySuccess"
+    },
+    "SendEmailFinallySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload": {
+          "sender_email": "tcueva.cloud@gmail.com",
+          "recipient_email": "tcueva.cloud@gmail.com",
+          "subject": "Hisorical Profit",
+          "message": "El proceso de carga del profit historico termino satisfactoriamente."
+        },
+        "FunctionName": "arn:aws:lambda:us-east-2:515966533232:function:WhiteFinance-EmailSender-Alert:$LATEST"
       },
       "Retry": [
         {
