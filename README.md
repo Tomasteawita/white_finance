@@ -117,3 +117,4 @@ Lo importante es que la clave Records[0][S3][Bucket][Name] y Records[0][S3][obje
 4. Verificar que todo salió ok por el mail (ver casilla de spam)
 5. Descargar el profit desde el bucket whitefinance-analytics path profit.csv
 6. Para hacer hacer el análisis de datos, utilizar el path de jupyter http://127.0.0.1:8888/lab, despues de ejecutar el docker-compose up --build
+7. En caso de actualizar data, esperar a que se genere el profit y la cuenta corriente historica, luego mover ambos archivos actualizados al path ./data/raw y ejecutar el notebook ganancias_realizadas.ipynb para ver la el historico de ganancias realizadas.
