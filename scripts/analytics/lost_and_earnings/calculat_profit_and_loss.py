@@ -30,6 +30,13 @@ def lambda_handler(event, context):
     key = event.get('key')
     s3 = boto3.client('s3')
 
+    if key.split('/')[-1] in ['cuenta_corriente_dolares_cable_historico.csv', 'cuenta_corriente_dolares_historico.csv']:
+        print(f'No se procesaran archivos en dolares.')
+        return {
+            'statusCode': 200,
+            'body': json.dumps('No se procesaran archivos en dolares.')
+        }
+
     obj = s3.get_object(Bucket=bucket, Key=key)
     csv_data = obj['Body'].read()
     df_cuenta_corriente_historico = pd.read_csv(

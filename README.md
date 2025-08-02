@@ -110,11 +110,14 @@ Lo importante es que la clave Records[0][S3][Bucket][Name] y Records[0][S3][obje
 
 # Paso a paso para la obtención del profit historico
 
-1. Decargar cuenta corriente en pesos de BullMarket
+1. Decargar cuenta corriente en pesos, dolares o dolares cable de BullMarket
 2. Alojar en el directorio C:\Users\usuario\withe-finance-ingest
 3. Ejecutar el script ingest_cuenta_corriente.ps1 desde el directorio raiz:
    1. .".\scripts\raw\ingest\ingest_cuenta_corriente.ps1"
+   2. Con los siguientes parametros
+      1. La fecha de descarga de la cuenta corriente en formato YYYY-MM-DD
+      2. La moneda, que puede ser PESOS, DOLARES o DOLARES CABLE (respetar la mayuscula)
 4. Verificar que todo salió ok por el mail (ver casilla de spam)
 5. Descargar el profit desde el bucket whitefinance-analytics path profit.csv
-6. Para hacer hacer el análisis de datos, utilizar el path de jupyter http://127.0.0.1:8888/lab, despues de ejecutar el docker-compose up --build
-7. En caso de actualizar data, esperar a que se genere el profit y la cuenta corriente historica, luego mover ambos archivos actualizados al path ./data/raw y ejecutar el notebook ganancias_realizadas.ipynb para ver la el historico de ganancias realizadas.
+6. Para hacer hacer el análisis de datos, utilizar el path de jupyter http://127.0.0.1:8888/lab, despues de ejecutar el docker-compose up --build -d
+7. En caso de actualizar data, esperar a que se genere el profit y la cuenta corriente historica, luego mover ambos archivos actualizados al path ./data/analytics y ejecutar el notebook que corresponda para ver la el historico de ganancias realizadas.

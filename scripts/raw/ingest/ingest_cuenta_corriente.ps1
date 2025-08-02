@@ -11,6 +11,8 @@ $stateMachineArn = "arn:aws:states:us-east-2:515966533232:stateMachine:WitheFina
 # --------------------
 # Le pido la fecha al usuario
 $fecha_yyyy_mm_dd = Read-Host "Ingrese la fecha (formato YYYY-MM-DD)"
+$currencyType = Read-Host "Ingrese el tipo de moneda (PESOS, DOLARES, DOLARES CABLE)"
+
 # Paso la fecha de YYYY-MM-DD a dd-MM-YY
 $fecha_dd_mm_yy = Get-Date $fecha_yyyy_mm_dd -Format "dd-MM-yy"
 # paso Fecha de YYYY-MM-DD a YYYYMMDD
@@ -21,8 +23,21 @@ Write-Host "Fecha convertida (YYYYMMDD): $fecha_yyyy_mm_dd_formateada" -Foregrou
 Write-Host "Fecha convertida (dd-MM-yy): $fecha_dd_mm_yy" -ForegroundColor Green
 
 # Defino el nombre del archivo Excel y CSV
-$excelFileName = "Cuenta Corriente PESOS $fecha_dd_mm_yy.xlsx"
-$csvFileName = "cuenta_corriente-$fecha_yyyy_mm_dd_formateada.csv"
+$excelFileName = "Cuenta Corriente $currencyType $fecha_dd_mm_yy.xlsx"
+# Si es en pesos, cuenta_corriente, sino, cuenta_corriente_dolares o cuenta_corriente_dolares_cable
+if ($currencyType -eq "PESOS") {
+    $csvFileName = "cuenta_corriente-$fecha_yyyy_mm_dd_formateada.csv"
+    $csvFileNameToValidate = "cuenta_corriente"
+} elseif ($currencyType -eq "DOLARES") {
+    $csvFileName = "cuenta_corriente_dolares-$fecha_yyyy_mm_dd_formateada.csv"
+    $csvFileNameToValidate = "cuenta_corriente_dolares"
+} elseif ($currencyType -eq "DOLARES CABLE") {
+    $csvFileName = "cuenta_corriente_dolares_cable-$fecha_yyyy_mm_dd_formateada.csv"
+    $csvFileNameToValidate = "cuenta_corriente_dolares_cable"
+} else {
+    Write-Host "❌ Error: Tipo de moneda no soportado." -ForegroundColor Red
+    exit 1
+}
 
 
 .\venv\Scripts\activate
@@ -30,7 +45,7 @@ Write-Host "📊 Ejecutando script de Python para validar el excel y pasarlo a c
 python .\scripts\raw\ingest\validators\main.py `
     --file_path "C:\Users\tomas\$localDir\$excelFileName" `
     --output_path "C:\Users\tomas\$localDir\$csvFileName" `
-    --validator_name "cuenta_corriente"
+    --validator_name "$csvFileNameToValidate"
 # Verificar si el archivo CSV fue creado
 if (-not (Test-Path "C:\Users\tomas\$localDir\$csvFileName")) {
     Write-Host "❌ Error: El archivo CSV '$csvFileName' no fue creado. Verifique el script de validación." -ForegroundColor Red
@@ -40,7 +55,7 @@ if (-not (Test-Path "C:\Users\tomas\$localDir\$csvFileName")) {
 }
 # Paso 1: Sincronizar el archivo CSV con S3
 Write-Host "🚀 Sincronizando archivos desde 'C:\Users\tomas\$localDir' hacia 's3://$s3Bucket/$s3Prefix/'..." -ForegroundColor Cyan
-aws s3 sync "C:\Users\tomas\$localDir" "s3://$s3Bucket/$s3Prefix/" --exclude "*" --include "cuenta_corriente-*.csv"
+aws s3 sync "C:\Users\tomas\$localDir" "s3://$s3Bucket/$s3Prefix/" --exclude "*" --include "cuenta_corriente*.csv"
 
 # Verificar si la sincronización fue exitosa (el código 0 indica éxito)
 if ($LASTEXITCODE -ne 0) {
@@ -52,10 +67,10 @@ if ($LASTEXITCODE -ne 0) {
 
 # Paso 2: Identificar el archivo más reciente para usar como input
 # Get-ChildItem para buscar, Sort-Object para ordenar y Select-Object para tomar el último
-$latestFile = Get-ChildItem -Path "C:\Users\tomas\$localDir" -Filter "cuenta_corriente-*.csv" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$latestFile = Get-ChildItem -Path "C:\Users\tomas\$localDir" -Filter "cuenta_corriente*.csv" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
 if (-not $latestFile) {
-    Write-Host "⚠️ No se encontraron archivos 'cuenta_corriente-*.csv'. No se iniciará la Step Function." -ForegroundColor Yellow
+    Write-Host "⚠️ No se encontraron archivos 'cuenta_corriente*.csv'. No se iniciará la Step Function." -ForegroundColor Yellow
     exit 0
 }
 
@@ -104,8 +119,8 @@ else {
     exit 1
 }
 
-Remove-Item "C:\Users\tomas\$localDir\cuenta_corriente-*.csv" -Force -ErrorAction SilentlyContinue
-Remove-Item "C:\Users\tomas\$localDir\Cuenta Corriente PESOS *.xlsx" -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\Users\tomas\$localDir\cuenta_corriente*.csv" -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\Users\tomas\$localDir\Cuenta Corriente $currencyType *.xlsx" -Force -ErrorAction SilentlyContinue
 Write-Host "🗑️ Archivos locales eliminados." -ForegroundColor Green
 deactivate
 Write-Host "✅ Proceso completado." -ForegroundColor Green

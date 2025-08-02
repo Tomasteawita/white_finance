@@ -50,7 +50,13 @@ def lambda_handler(event, context):
 
     # --- Definir detalles del bucket y archivo de destino (histórico) ---
     target_bucket = 'withefinance-integrated'
-    target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_historico.csv'
+    if 'cuenta_corriente_dolares_cable' in source_key:
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_dolares_cable_historico.csv'
+    elif 'cuenta_corriente_dolares' in source_key:
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_dolares_historico.csv'
+    else:
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_pesos_historico.csv'
+    print(f"Archivo histórico destino: s3://{target_bucket}/{target_key_historico}")
     
     df_historical = pd.DataFrame() # DataFrame para almacenar los datos históricos
 
@@ -63,7 +69,7 @@ def lambda_handler(event, context):
 
     except s3_client.exceptions.NoSuchKey:
         # Prioridad 2: El histórico no existe, buscar la partición anterior en 'withefinance-raw'
-        print(f"Archivo histórico no encontrado en 'integrated'. Buscando partición anterior en 'raw'.")
+        print("Archivo histórico no encontrado en 'integrated'. Buscando partición anterior en 'raw'.")
         
         # Extraer la fecha de la partición actual del 'key'
         current_date_match = re.search(r'partition_date=(\d{4}-\d{2}-\d{2})', source_key)
@@ -74,8 +80,9 @@ def lambda_handler(event, context):
         print(f"Fecha de partición actual: {current_partition_date}")
 
         # Listar objetos en el bucket 'raw' para encontrar particiones anteriores
+        prefix = source_key.split('/')[0]
         paginator = s3_client.get_paginator('list_objects_v2')
-        pages = paginator.paginate(Bucket=source_bucket, Prefix='cuenta_corriente/')
+        pages = paginator.paginate(Bucket=source_bucket, Prefix=f"{prefix}/")
 
         previous_partitions = []
         for page in pages:
