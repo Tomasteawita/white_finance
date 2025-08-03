@@ -123,4 +123,22 @@ Remove-Item "C:\Users\tomas\$localDir\cuenta_corriente*.csv" -Force -ErrorAction
 Remove-Item "C:\Users\tomas\$localDir\Cuenta Corriente $currencyType *.xlsx" -Force -ErrorAction SilentlyContinue
 Write-Host "🗑️ Archivos locales eliminados." -ForegroundColor Green
 deactivate
+# Copio el archivo de cuenta corriente historico en ./data/analytics
+# si es PESOS, cuenta_corriente_historico.csv
+# si es DOLARES, cuenta_corriente_dolares_historico.csv
+# si es DOLARES CABLE, cuenta_corriente_dolares_historico.csv
+if ($currencyType -eq "PESOS") {
+    $historicalFileName = "cuenta_corriente_historico.csv"
+} elseif ($currencyType -eq "DOLARES") {
+    $historicalFileName = "cuenta_corriente_dolares_historico.csv"
+} elseif ($currencyType -eq "DOLARES CABLE") {
+    $historicalFileName = "cuenta_corriente_dolares_cable_historico.csv"
+} else {
+    Write-Host "❌ Error: Tipo de moneda no soportado." -ForegroundColor Red
+    exit 1
+}
+
+aws s3 cp "s3://withefinance-integrated/cuenta_corriente_historico/$historicalFileName" `
+    "C:\Users\tomas\$localDir\data\analytics\$historicalFileName"
+
 Write-Host "✅ Proceso completado." -ForegroundColor Green
