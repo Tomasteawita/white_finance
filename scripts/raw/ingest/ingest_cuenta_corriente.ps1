@@ -129,6 +129,8 @@ deactivate
 # si es DOLARES CABLE, cuenta_corriente_dolares_historico.csv
 if ($currencyType -eq "PESOS") {
     $historicalFileName = "cuenta_corriente_historico.csv"
+    aws s3 cp "s3://withefinance-analytics/profit.csv" `
+        "C:\Users\tomas\white_finance\data\analytics\profit.csv"    
 } elseif ($currencyType -eq "DOLARES") {
     $historicalFileName = "cuenta_corriente_dolares_historico.csv"
 } elseif ($currencyType -eq "DOLARES CABLE") {

@@ -48,6 +48,9 @@ def lambda_handler(event, context):
     for col in ['Cantidad', 'Precio', 'Importe']:
         if df_cuenta_corriente_historico[col].dtype == 'object':
             df_cuenta_corriente_historico[col] = df_cuenta_corriente_historico[col].str.replace(',', '', regex=False).astype(float)
+    
+    # Ordeno primero por Especie y luego por Operado
+    df_cuenta_corriente_historico = df_cuenta_corriente_historico.sort_values(by=['Especie', 'Operado'], ascending=[True, True])
 
     # 2. Filtrar solo operaciones de compra y venta
     operaciones = df_cuenta_corriente_historico[df_cuenta_corriente_historico['Comprobante'].isin(['COMPRA NORMAL', 'VENTA'])].copy()
