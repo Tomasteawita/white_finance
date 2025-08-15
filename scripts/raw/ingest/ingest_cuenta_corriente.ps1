@@ -124,9 +124,12 @@ Remove-Item "C:\Users\tomas\$localDir\Cuenta Corriente $currencyType *.xlsx" -Fo
 Write-Host "🗑️ Archivos locales eliminados." -ForegroundColor Green
 deactivate
 # Copio el archivo de cuenta corriente historico en ./data/analytics
-# si es PESOS, cuenta_corriente_historico.csv
-# si es DOLARES, cuenta_corriente_dolares_historico.csv
-# si es DOLARES CABLE, cuenta_corriente_dolares_historico.csv
+# Espero por lo menos 30 segundos a que la Step Function termine de procesar
+Write-Host "⏳ Esperando a que la Step Function procese los datos..." -ForegroundColor Yellow
+Start-Sleep -Seconds 30
+# Verifico el tipo de moneda para determinar el archivo histórico a descargar
+Write-Host "📥 Descargando el archivo histórico de cuenta corriente..." -ForegroundColor Cyan
+
 if ($currencyType -eq "PESOS") {
     $historicalFileName = "cuenta_corriente_historico.csv"
     aws s3 cp "s3://withefinance-analytics/profit.csv" `
@@ -141,6 +144,6 @@ if ($currencyType -eq "PESOS") {
 }
 
 aws s3 cp "s3://withefinance-integrated/cuenta_corriente_historico/$historicalFileName" `
-    "C:\Users\tomas\$localDir\data\analytics\$historicalFileName"
+    "C:\Users\tomas\white_finance\data\analytics\$historicalFileName"
 
 Write-Host "✅ Proceso completado." -ForegroundColor Green

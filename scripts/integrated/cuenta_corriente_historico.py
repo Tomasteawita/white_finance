@@ -55,7 +55,7 @@ def lambda_handler(event, context):
     elif 'cuenta_corriente_dolares' in source_key:
         target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_dolares_historico.csv'
     else:
-        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_pesos_historico.csv'
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_historico.csv'
     print(f"Archivo histórico destino: s3://{target_bucket}/{target_key_historico}")
     
     df_historical = pd.DataFrame() # DataFrame para almacenar los datos históricos
