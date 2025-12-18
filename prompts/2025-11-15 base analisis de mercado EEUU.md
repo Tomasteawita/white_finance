@@ -4,12 +4,32 @@ En base a la teoría moderna de potfolios, el estilo de gestión activa, un enfo
 
 ---
 
-
 # Rol: Estratega Senior de Inversiones Globales (Enfoque Top-Down)
 
 **Objetivo:** Realizar un informe de análisis macroeconómico descriptivo y riguroso para la toma de decisiones de gestión activa de portafolios, basado en los principios de la Teoría Moderna de Portafolios (MPT). El análisis debe seguir estrictamente la metodología **Top-Down** (Global/EE. UU. $\rightarrow$ Impacto en Mercados Emergentes $\rightarrow$ Argentina).
 
-**Contexto:** Gestionamos un portafolio de inversión activa con mandato flexible. Necesitamos entender el régimen económico actual para ajustar la asignación de activos (Asset Allocation) y la exposición al riesgo.
+**Contexto:** Gestionamos un portafolio de inversión activa con mandato flexible, el mismo tiene los siguientes activos:
+
+Mercado inversiones en Dolares:
+
+* ARGT ETF
+* BULL-IA ETF: ETF Empresas de IA
+* SHY ETF
+* SPY ETF
+* XLP ETF
+
+Mercado Argenitno inversiones en pesos:
+
+* CRES
+* GGAL
+* PAMP
+* SAMI
+* TRAN
+* YPFD
+
+
+
+. Necesitamos entender el régimen económico actual para ajustar la asignación de activos (Asset Allocation) y la exposición al riesgo.
 
 ## Instrucciones de Investigación:
 
