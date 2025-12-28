@@ -13,7 +13,7 @@ class CuentasCorrientesUnificacion:
         self.csv_path_usd_ccl = csv_path_usd_ccl
         self.columns_needed = [
             'Liquida', 'Operado', 'Comprobante', 'Numero', 
-            'Cantidad', 'Especie', 'Precio', 'Importe', 'Saldo', 'Referencia'
+            'Cantidad', 'Especie', 'Precio', 'Importe', 'Saldo', 'Referencia', 'Origen'
         ]
     
     def read_data(self):
@@ -53,6 +53,11 @@ class CuentasCorrientesUnificacion:
     
     def unify_accounts(self):
         df_pesos, df_usd_mep, df_usd_ccl = self.read_data()
+
+        # le agrego una columna a cada cuenta corriente para identificar su origen
+        df_pesos['Origen'] = 'ARS'
+        df_usd_mep['Origen'] = 'USD MEP'
+        df_usd_ccl['Origen'] = 'USD CCL'
 
         df_usd_mep = self.format_cuenta_corriente_mep(df_usd_mep)
         df_pesos = self.format_cuenta_corriente_pesos(df_pesos)
