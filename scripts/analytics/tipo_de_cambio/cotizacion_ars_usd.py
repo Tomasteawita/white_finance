@@ -2,7 +2,7 @@ import yfinance as yf
 from datetime import datetime
 
 # Definir el período de tiempo
-def main():
+def ars_to_usd(): 
     start_date = "2024-01-01"
     end_date = datetime.today().strftime('%Y-%m-%d')
 
@@ -16,7 +16,7 @@ def main():
     print("ADR GGAL (USD):")
     print(ggal_adr.head())
     print("\nAcción GGAL en Pesos (ARS):")
-    print(ggal_pesos.head())}# Hacer join entre ambos dataframes y quedarse solo con Date y Close
+    print(ggal_pesos.head())# Hacer join entre ambos dataframes y quedarse solo con Date y Close
     ggal_combined = ggal_adr[['Close']].join(ggal_pesos[['Close']], how='inner', lsuffix='_adr', rsuffix='_pesos')
 
     # Renombrar las columnas para mayor claridad
@@ -24,6 +24,35 @@ def main():
     # Genero la columna tipo de cambio, multiplicando Close_GGAL_ARS * 10 y luego divido por Close_ADR_USD
     ggal_combined['Tipo_Cambio_ARS_USD'] = (ggal_combined['Close_GGAL_ARS'] * 10) / ggal_combined['Close_ADR_USD']  
     ggal_combined.to_csv("../data/tipo_cambio_ggal.csv", index=True)
+
+def ars_to_mep():
+    """
+    Esta funcion me trae las cotizaciones del AL30D y AL30C, posteriormente, calcular un ratio a partir del calculo AL30C/AL30D
+    """
+    start_date = "2024-01-01"
+    end_date = datetime.today().strftime('%Y-%m-%d')
+
+    # Descargar datos del ADR (GGAL en NYSE)
+    ggal_adr = yf.download("GGAL.BA", start=start_date, end=end_date)
+
+    # Descargar datos de la acción en pesos (GGAL en BCBA)
+    ggal_pesos = yf.download("GGALD.BA", start=start_date, end=end_date)
+
+    # Mostrar las primeras filas de cada dataset
+    ggal_combined = ggal_adr[['Close']].join(ggal_pesos[['Close']], how='inner', lsuffix='_pesos', rsuffix='_mep')
+
+    # Renombrar las columnas para mayor claridad
+    ggal_combined.columns = ['Close_GGAL_ARS', 'Close_ADR_USD']
+    # Genero la columna tipo de cambio, multiplicando Close_GGAL_ARS * 10 y luego divido por Close_ADR_USD
+    ggal_combined['Tipo_Cambio_ARS_USD'] = ggal_combined['Close_GGAL_ARS'] / ggal_combined['Close_ADR_USD']  
+    ggal_combined.to_csv("../data/tipo_cambio_ggal_mep.csv", index=True)
+
+def main():
+    """Función principal que ejecuta ambas funciones"""
+    print("=== Calculando tipo de cambio ARS/USD usando GGAL ===")
+    ars_to_usd()
+    print("\n=== Calculando tipo de cambio MEP usando AL30 ===")
+    ars_to_mep()
 
 if __name__ == "__main__":
     main()
