@@ -43,6 +43,7 @@ def gen_cartera(df_cuenta_corriente, fecha_corte=None):
         especie = op['Especie']
         cantidad = abs(op['Cantidad'])
         comprobante = op['Comprobante']
+        importe = op['Importe']
 
         # --- A. NORMALIZACIÓN ---
         if especie.endswith('.US'):
@@ -52,8 +53,8 @@ def gen_cartera(df_cuenta_corriente, fecha_corte=None):
                 cantidad = cantidad * ratios_cedear[especie_base]
 
         # --- B. DEFINICIÓN TIPO ---
-        es_venta = comprobante in ['VENTA', 'VENTA EXTERIOR V', 'VENTA CAUCION TERMINO', 'VENTA PARIDAD']
-        es_compra = comprobante in ['COMPRA NORMAL', 'COMPRA EXTERIOR V', 'LICITACION PRIVADA', 'COMPRA CAUCION CONTADO', 'COMPRA PARIDAD']
+        es_venta = comprobante in ['VENTA', 'VENTA EXTERIOR V', 'VENTA CAUCION TERMINO', 'VENTA PARIDAD', 'CAUCION COLOCADORA TERMINO']
+        es_compra = comprobante in ['COMPRA NORMAL', 'COMPRA EXTERIOR V', 'LICITACION PRIVADA', 'COMPRA CAUCION CONTADO', 'COMPRA PARIDAD', 'CAUCION COLOCADORA CONTADO']
 
         # --- C. VALIDACIÓN INICIAL ---
         # Si intentamos vender algo que no existe en el diccionario, asumimos que es histórico y lo omitimos.
@@ -63,10 +64,13 @@ def gen_cartera(df_cuenta_corriente, fecha_corte=None):
 
         # Inicializar si no existe
         if especie not in cartera:
-            cartera[especie] = {'cantidad_total': 0.0}
+            cartera[especie] = {'cantidad_total': 0.0, 'importe_total': 0.0}
 
         # --- D. EJECUCIÓN ---
-        if es_compra:
+        if es_compra and especie == 'VARIAS':
+            cartera[especie]['cantidad_total'] += cantidad
+            cartera[especie]['importe_total'] += importe * -1
+        elif es_compra:
             cartera[especie]['cantidad_total'] += cantidad
         
         elif es_venta:
