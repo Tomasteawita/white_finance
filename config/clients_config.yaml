@@ -1,0 +1,39 @@
+# Configuración de clientes
+# Cada cliente tiene:
+# - id: Identificador único
+# - name: Nombre del cliente
+# - broker: Broker que utiliza (bull_market o balanz)
+# - source_folder: Carpeta donde se descargan sus archivos
+
+clients:
+  - id: cliente_A
+    name: "Cliente A"
+    broker: bull_market
+    source_folder: "cliente_A"
+    active: true
+    
+  - id: cliente_B
+    name: "Cliente B"
+    broker: balanz
+    source_folder: "cliente_B"
+    active: true
+    
+  # - id: cliente_C
+  #   name: "Cliente C"
+  #   broker: bull_market
+  #   source_folder: "cliente_C"
+  #   active: false
+
+# Configuración de brokers
+brokers:
+  bull_market:
+    name: "Bull Market Brokers"
+    file_patterns:
+      - "*_mv_*.xlsx"
+      - "*movimientos*.xlsx"
+    
+  balanz:
+    name: "Balanz Capital"
+    file_patterns:
+      - "*_mv_*.xlsx"
+      - "*cuenta_corriente*.xlsx"
