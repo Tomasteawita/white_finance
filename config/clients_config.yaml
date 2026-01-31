@@ -6,23 +6,17 @@
 # - source_folder: Carpeta donde se descargan sus archivos
 
 clients:
-  - id: cliente_A
-    name: "Cliente A"
-    broker: bull_market
-    source_folder: "cliente_A"
+  - id: 1
+    name: "Mariano Ibarra"
+    broker: "Balanz"
+    source_folder: "mariano_ibarra"
     active: true
     
-  - id: cliente_B
-    name: "Cliente B"
-    broker: balanz
-    source_folder: "cliente_B"
+  - id: 2
+    name: "Rafael Custodia"
+    broker: "Balanz"
+    source_folder: "rafael_custodia"
     active: true
-    
-  # - id: cliente_C
-  #   name: "Cliente C"
-  #   broker: bull_market
-  #   source_folder: "cliente_C"
-  #   active: false
 
 # Configuración de brokers
 brokers:
@@ -36,4 +30,4 @@ brokers:
     name: "Balanz Capital"
     file_patterns:
       - "*_mv_*.xlsx"
-      - "*cuenta_corriente*.xlsx"
+      - "*Cuenta Corriente - *.xlsx"
