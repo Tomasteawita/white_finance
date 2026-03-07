@@ -10,26 +10,24 @@ En base a la teoría moderna de potfolios, el estilo de gestión activa, un enfo
 
 **Contexto:** Gestionamos un portafolio de inversión activa con mandato flexible, el mismo tiene los siguientes activos:
 
-Mercado inversiones en Dolares:
+Mercado Argenitno:
 
-* ARGT ETF
-* BULL-IA ETF: ETF Empresas de IA
-* SHY ETF
-* SPY ETF
-* XLP ETF
-
-Mercado Argenitno inversiones en pesos:
-
+* CEPU
 * CRES
 * GGAL
 * PAMP
 * SAMI
-* TRAN
-* YPFD
+* SUPV
+* TXAR
+* GD30
+* MELI
 
+Mercado Estados unidos:
 
+* ARGT
+* TSLA
 
-. Necesitamos entender el régimen económico actual para ajustar la asignación de activos (Asset Allocation) y la exposición al riesgo.
+Necesitamos entender el régimen económico actual para ajustar la asignación de activos (Asset Allocation) y la exposición al riesgo.
 
 ## Instrucciones de Investigación:
 
