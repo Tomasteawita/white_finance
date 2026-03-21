@@ -27,3 +27,24 @@ services:
       - ./notebooks:/home/jovyan/work
       - ./data/analytics:/home/jovyan/data
       - ./scripts:/home/jovyan/scripts
+  dashboard:
+    container_name: white_finance-dashboard
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 8050:8050
+    env_file:
+      - .env
+    environment:
+      # Directorio donde están los CSVs dentro del contenedor
+      - DATA_DIR=/home/jovyan/data
+      - DASH_HOST=0.0.0.0
+      - DASH_PORT=8050
+      - DASH_DEBUG=false
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      # Montar ./data completo para acceder a profit.csv y cuentas corrientes
+      - ./data/analytics:/home/jovyan/data
+    command: [ "python", "/home/jovyan/work/dashboard.py" ]

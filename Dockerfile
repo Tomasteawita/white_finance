@@ -7,7 +7,7 @@ WORKDIR /home/jovyan/work
 COPY requirements.txt .
 
 # Install the required Python packages
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --timeout=180 --retries=5 -r requirements.txt
 
 # Expose the port for Jupyter
 EXPOSE 8888

@@ -1,0 +1,47 @@
+{
+    "DOLARES CABLE": {
+        "DIV": "DIVIDENDOS",
+        "DREC": "RETENCION DOLARES",
+        "VEEX": "VENTA EXTERIOR V",
+        "COEX": "COMPRA EXTERIOR V",
+        "DU$V": "NOTA DE DEBITOS U$S"
+    },
+    "DOLARES MEP": {
+        "PU$A": "ORD PAGO DOLARES",
+        "VTU$": "VENTA PARIDAD",
+        "CDOA": "REC COBRO DOLARES",
+        "CPU$": "COMPRA PARIDAD",
+        "LIPA": "LICITACION PARIDAD",
+        "RTA": "RENTA Y AMORTIZ",
+        "CU$V": "NOTA DE CREDITO U$S",
+        "DRTM": "RETENCION DOLAR MEP",
+        "DIV": "DIVIDENDOS",
+        "VTRP": "VENTA PARIDAD",
+        "CTRP": "COMPRA TRADING PARIDAD"
+    },
+    "PESOS": {
+        "COBA": "RECIBO DE COBRO",
+        "SFCI": "SUSCRIPCION FCI",
+        "CPRA": "COMPRA NORMAL",
+        "PAGA": "ORDEN DE PAGO",
+        "LRFD": "LIQUIDACION RESCATE FCI",
+        "VTAS": "VENTA",
+        "VTU$": "VENTA PARIDAD",
+        "CPU$": "COMPRA PARIDAD",
+        "DIV": "PAGO DIV",
+        "DEME": "CREDITO DERMERC-",
+        "COTR": "COMPRA TRADING",
+        "VTTR": "VENTA TRADING",
+        "DREP": "ORDEN DE PAGO",
+        "CDIV": "PAGO DIV",
+        "LIPA": "PAGO DIV",
+        "VEEX": "VENTA",
+        "COEX": "COMERCIO EXTERIOR",
+        "RTA": "VENTA",
+        "CCDO": "SUSCRIPCION FCI",
+        "VTCT": "VENTA",
+        "VTRP": "VENTA",
+        "CTRP": "COMPRA TRADING",
+        "LPRI": "LICITACION PRIVADA"
+    }
+}

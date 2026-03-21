@@ -15,3 +15,7 @@ python-dotenv==1.0.1
 lxml==5.3.0
 s3fs==2024.9.0
 openpyxl==3.1.5
+# Dashboard de Ganancias Realizadas
+dash>=2.17.0
+plotly>=5.22.0
+gunicorn>=22.0.0
