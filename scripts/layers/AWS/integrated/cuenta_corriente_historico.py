@@ -1,0 +1,161 @@
+import json
+import boto3
+import pandas as pd
+import io
+import re
+from datetime import datetime
+
+# Inicializar el cliente de S3 fuera del handler para reutilizar la conexión
+s3_client = boto3.client('s3')
+
+def set_context_event(event):
+    """Si el contexto es de un stepFunction, entonces event va a ser event['Payload']"""
+    # si event tiene la keu Pyload, entonces es un stepFunction
+    if 'Payload' in event:
+        return event['Payload']
+    return event
+
+def lambda_handler(event, context):
+    """
+    Procesa un archivo CSV de cuenta corriente, lo compara con datos históricos
+    y actualiza el histórico con las nuevas transacciones (novedades).
+
+    Pasos del proceso:
+    1. Lee el archivo CSV recién cargado (definido en el evento).
+    2. Determina la fuente de datos históricos:
+       - Prioriza el archivo 'cuenta_corriente_historico.csv' en 'withefinance-integrated'.
+       - Si no existe, busca la partición anterior más reciente en 'withefinance-raw'.
+    3. Identifica las transacciones nuevas (novedades) comparando las fechas de operación.
+    4. Concatena los datos históricos con las novedades.
+    5. Escribe el DataFrame actualizado y consolidado en 'withefinance-integrated'.
+    """
+    # imprimo el evento recibido para depuración
+    print("Evento recibido: " + json.dumps(event, indent=2))
+    event = set_context_event(event)
+
+    # --- 1. Extraer parámetros del evento ---
+    source_bucket = event['bucket-insertion']
+    source_key = event['key-insertion']
+    print(f"Iniciando proceso para: s3://{source_bucket}/{source_key}")
+
+    # --- 2. Leer el nuevo CSV y convertirlo a DataFrame ---
+    try:
+        response = s3_client.get_object(Bucket=source_bucket, Key=source_key)
+        # Asegurarse de que la columna 'Operado' se interprete como fecha
+        df_new = pd.read_csv(response['Body'], parse_dates=['Operado'])
+        print(f"Leído el archivo nuevo. {len(df_new)} filas encontradas.")
+    except Exception as e:
+        print(f"Error al leer el archivo desde s3://{source_bucket}/{source_key}. Error: {e}")
+        raise e
+
+    # --- Definir detalles del bucket y archivo de destino (histórico) ---
+    target_bucket = 'withefinance-integrated'
+    if 'cuenta_corriente_dolares_cable' in source_key:
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_dolares_cable_historico.csv'
+    elif 'cuenta_corriente_dolares' in source_key:
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_dolares_historico.csv'
+    else:
+        target_key_historico = 'cuenta_corriente_historico/cuenta_corriente_historico.csv'
+    print(f"Archivo histórico destino: s3://{target_bucket}/{target_key_historico}")
+    
+    df_historical = pd.DataFrame() # DataFrame para almacenar los datos históricos
+
+    # --- 3. Buscar el DataFrame histórico ---
+    try:
+        # Prioridad 1: Intentar leer el histórico consolidado desde 'withefinance-integrated'
+        response_hist = s3_client.get_object(Bucket=target_bucket, Key=target_key_historico)
+        df_historical = pd.read_csv(response_hist['Body'], parse_dates=['Operado'])
+        print(f"Encontrado archivo histórico en 'integrated': s3://{target_bucket}/{target_key_historico}")
+
+    except s3_client.exceptions.NoSuchKey:
+        # Prioridad 2: El histórico no existe, buscar la partición anterior en 'withefinance-raw'
+        print("Archivo histórico no encontrado en 'integrated'. Buscando partición anterior en 'raw'.")
+        
+        # Extraer la fecha de la partición actual del 'key'
+        current_date_match = re.search(r'partition_date=(\d{4}-\d{2}-\d{2})', source_key)
+        if not current_date_match:
+            raise ValueError("No se pudo extraer 'partition_date' del key del evento.")
+        
+        current_partition_date = datetime.strptime(current_date_match.group(1), '%Y-%m-%d').date()
+        print(f"Fecha de partición actual: {current_partition_date}")
+
+        # Listar objetos en el bucket 'raw' para encontrar particiones anteriores
+        prefix = source_key.split('/')[0]
+        paginator = s3_client.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=source_bucket, Prefix=f"{prefix}/")
+
+        previous_partitions = []
+        for page in pages:
+            for obj in page.get('Contents', []):
+                key = obj['Key']
+                match = re.search(r'partition_date=(\d{4}-\d{2}-\d{2})', key)
+                if match:
+                    partition_date = datetime.strptime(match.group(1), '%Y-%m-%d').date()
+                    # Guardar solo las particiones anteriores a la actual
+                    if partition_date < current_partition_date:
+                        previous_partitions.append((partition_date, key))
+
+        if previous_partitions:
+            # Encontrar la máxima de las particiones anteriores
+            latest_previous_partition = max(previous_partitions, key=lambda item: item[0])
+            prev_partition_key = latest_previous_partition[1]
+            print(f"Partición anterior encontrada: s3://{source_bucket}/{prev_partition_key}")
+
+            # Leer el archivo CSV de la partición anterior
+            response_prev = s3_client.get_object(Bucket=source_bucket, Key=prev_partition_key)
+            df_historical = pd.read_csv(response_prev['Body'], parse_dates=['Operado'])
+        else:
+            # Caso base: No hay histórico en 'integrated' ni particiones anteriores en 'raw'
+            print("No se encontraron particiones anteriores. Este es el primer archivo a procesar.")
+            # df_historical permanecerá vacío
+
+    # --- 4. Filtrar para obtener solo las novedades ---
+    if not df_historical.empty:
+        df_final = pd.merge(
+            df_new,
+            df_historical,
+            on=['Liquida', 'Operado', 'Comprobante', 'Numero'],
+            how='outer',
+            indicator=True
+        )
+
+        # hag un coalesce entre las columnas Cantidad_x,Especie_x,Precio_x,Importe_x,Saldo_x,Referencia_x,Cantidad_y,Especie_y,Precio_y,Importe_y,Saldo_y,Referencia_y
+        df_final['Cantidad'] = df_final['Cantidad_x'].combine_first(df_final['Cantidad_y'])
+        df_final['Especie'] = df_final['Especie_x'].combine_first(df_final['Especie_y'])
+        df_final['Precio'] = df_final['Precio_x'].combine_first(df_final['Precio_y'])
+        df_final['Importe'] = df_final['Importe_x'].combine_first(df_final['Importe_y'])
+        df_final['Saldo'] = df_final['Saldo_x'].combine_first(df_final['Saldo_y'])
+        df_final['Referencia'] = df_final['Referencia_x'].combine_first(df_final['Referencia_y'])
+        df_final = df_final.drop(columns=['_merge', 'Cantidad_x', 'Especie_x', 'Precio_x', 'Importe_x', 'Saldo_x', 'Referencia_x', 'Cantidad_y', 'Especie_y', 'Precio_y', 'Importe_y', 'Saldo_y', 'Referencia_y'])
+
+        # si la cantidad de filaes en df_final es mayor que la cantidad de filas de df_historical, significa que hay novedades
+        novedades_count = len(df_final) > len(df_historical)
+    else:
+        # Si no hay histórico, el DataFrame final es simplemente el nuevo DataFrame
+        df_final = df_new
+        novedades_count = True  # Siempre hay novedades si no hay histórico
+        print("No hay datos históricos; el archivo nuevo se convierte en la base del histórico.")
+
+    # --- 5. Escribir el DataFrame final en el bucket 'integrated' ---
+
+    if novedades_count:
+        # Convertir DataFrame a formato CSV en memoria
+        csv_buffer = io.StringIO()
+        df_final.to_csv(csv_buffer, index=False)
+        
+        # Subir el archivo CSV a S3
+        s3_client.put_object(
+            Bucket=target_bucket,
+            Key=target_key_historico,
+            Body=csv_buffer.getvalue()
+        )
+        print(f"DataFrame final escrito exitosamente en s3://{target_bucket}/{target_key_historico}")
+    else:
+        print("No hay datos para escribir en el bucket de destino.")
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Proceso de actualización de históricos completado exitosamente!'),
+        'bucket': target_bucket,
+        'key': target_key_historico
+    }

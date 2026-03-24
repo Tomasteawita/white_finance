@@ -44,7 +44,7 @@ services:
       - DASH_PORT=8050
       - DASH_DEBUG=false
     volumes:
-      - ./notebooks:/home/jovyan/work
+      - ./apps:/home/jovyan/apps
       # Montar ./data completo para acceder a profit.csv y cuentas corrientes
       - ./data/analytics:/home/jovyan/data
-    command: [ "python", "/home/jovyan/work/dashboard.py" ]
+    command: [ "python", "/home/jovyan/apps/dashboard.py" ]

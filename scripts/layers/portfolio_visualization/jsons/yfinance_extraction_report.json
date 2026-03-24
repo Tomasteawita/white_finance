@@ -1,0 +1,39 @@
+{
+    "success": [
+        "SAMI.BA",
+        "TRAN.BA",
+        "GGAL.BA",
+        "CEPU.BA",
+        "PAMP.BA",
+        "BPAT.BA",
+        "FIPL.BA",
+        "CVH.BA",
+        "DGCU2.BA",
+        "AUSO.BA",
+        "MIRG.BA",
+        "TECO2.BA",
+        "CRES.BA",
+        "YPFD.BA",
+        "ALUA.BA",
+        "GBAN.BA",
+        "EDN.BA",
+        "METR.BA",
+        "ECOG.BA",
+        "BYMA.BA",
+        "SH.BA",
+        "SUPV.BA",
+        "TXAR.BA"
+    ],
+    "failed": [
+        "RIGAHOR.BA",
+        "GD30.BA",
+        "AL30.BA",
+        "BULMAAA.BA",
+        "BMACTAA.BA",
+        "AE38.BA",
+        "SNSBO.BA",
+        "ALGIIIA.BA",
+        "GD35.BA",
+        "LK01Q.BA"
+    ]
+}
