@@ -13,7 +13,7 @@ def main():
     csv_mep = r'c:\Users\tomas\white_finance\data\analytics\cuenta_corriente_dolares_historico.csv'
     csv_ccl = r'c:\Users\tomas\white_finance\data\analytics\cuenta_corriente_dolares_cable_historico.csv'
     
-    output_path = r'c:\Users\tomas\white_finance\data\analytics\cuentas_unificadas_usd_sorted.csv'
+    output_path = r'c:\Users\tomas\white_finance\data\analytics\cuentas_unificadas_sorted.csv'
 
     # Inicializamos el orquestador
     pricer = UnifiedAccountPricer(
