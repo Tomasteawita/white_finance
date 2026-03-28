@@ -27,22 +27,28 @@ class BaseExtractor(ABC):
         conn_str = f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{db}"
         return create_engine(conn_str)
 
-    def extract(self, ticker: str, start_date: str = None, end_date: str = None) -> bool:
+    def extract(self, ticker: str, start_date: str = None, end_date: str = None, mercado: str = "bCBA") -> bool:
         """
         === THE TEMPLATE METHOD ===
         Pipeline irrestricto de extracción con Asimetría Positiva (Robustez).
         Retorna True si la especie fue asimilada a la Base de Datos exitosamente.
+
+        Args:
+            ticker:     Símbolo de la especie (sin sufijos como .BA / .US).
+            start_date: Fecha de inicio 'YYYY-MM-DD'. Si None, el extractor usa su default.
+            end_date:   Fecha de fin    'YYYY-MM-DD'. Si None, el extractor usa su default.
+            mercado:    Mercado de origen. 'bCBA' = BYMA (Argentina), 'nYSE|nASDAQ' = USA.
         """
         # 1. Autenticación Delegada
         if not self._authenticate():
             self.logger.warning(f"Abortado [{ticker}]: Falló la validación pre-vuelo (Auth o Token).")
             return False
 
-        self.logger.info(f"Iniciando flujo de extracción para [{ticker}]...")
-        
+        self.logger.info(f"Iniciando flujo de extracción para [{ticker}] | mercado={mercado} ...")
+
         # 2. Obtención de datos crudos Delegada
         try:
-            raw_data = self._fetch_data(ticker, start_date, end_date)
+            raw_data = self._fetch_data(ticker, start_date, end_date, mercado=mercado)
         except Exception as e:
             self.logger.error(f"Falla ruidosa al consultar la API original para {ticker}: {e}")
             return False
@@ -53,7 +59,7 @@ class BaseExtractor(ABC):
 
         # 3. Normalización Delegada
         try:
-            normalized_data = self._normalize_data(raw_data, ticker)
+            normalized_data = self._normalize_data(raw_data, ticker, mercado=mercado)
         except Exception as e:
             self.logger.error(f"Error normalizando la respuesta de {ticker}: {e}")
             return False
@@ -77,12 +83,12 @@ class BaseExtractor(ABC):
         pass
 
     @abstractmethod
-    def _fetch_data(self, ticker: str, start_date: str = None, end_date: str = None) -> pd.DataFrame:
+    def _fetch_data(self, ticker: str, start_date: str = None, end_date: str = None, mercado: str = "bCBA") -> pd.DataFrame:
         """Peticiona a la red de la fuente externa particular y entrega los datos sucios resultantes."""
         pass
 
     @abstractmethod
-    def _normalize_data(self, raw_data: pd.DataFrame, ticker: str) -> pd.DataFrame:
+    def _normalize_data(self, raw_data: pd.DataFrame, ticker: str, mercado: str = "bCBA") -> pd.DataFrame:
         """
         Debe tomar origin data, homogeneizar columnas y retornar estricto:
         date (DATE/Y-M-D), open, high, low, close, volume, source (str)

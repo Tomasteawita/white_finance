@@ -61,7 +61,7 @@ Write-Host "🐍 Activando entorno virtual..." -ForegroundColor Cyan
 
 # Ejecutar validador y convertir a CSV
 Write-Host "📊 Ejecutando script de Python para validar '$excelFileName'..." -ForegroundColor Cyan
-python .\scripts\raw\ingest\validators\main.py `
+python .\scripts\layers\AWS\raw\ingest\validators\main.py `
     --file_path "C:\Users\tomas\$localDir\$excelFileName" `
     --output_path "C:\Users\tomas\$localDir\$csvFileName" `
     --validator_name "$csvFileNameToValidate"

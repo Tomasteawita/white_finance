@@ -38,9 +38,9 @@ Ejecuta los scripts de ingesta para las tres distintas monedas utilizando los ar
 
 ```pwsh
 cd C:\Users\tomas\white_finance
-.\scripts\raw\ingest\ingest_cuenta_corriente_auto.ps1 -fecha "<FECHA_YYYY_MM_DD>" -moneda "PESOS"
-.\scripts\raw\ingest\ingest_cuenta_corriente_auto.ps1 -fecha "<FECHA_YYYY_MM_DD>" -moneda "DOLARES"
-.\scripts\raw\ingest\ingest_cuenta_corriente_auto.ps1 -fecha "<FECHA_YYYY_MM_DD>" -moneda "DOLARES CABLE"
+.\scripts\layers\AWS\raw\ingest\ingest_cuenta_corriente_auto.ps1 -fecha "<FECHA_YYYY_MM_DD>" -moneda "PESOS"
+.\scripts\layers\AWS\raw\ingest\ingest_cuenta_corriente_auto.ps1 -fecha "<FECHA_YYYY_MM_DD>" -moneda "DOLARES"
+.\scripts\layers\AWS\raw\ingest\ingest_cuenta_corriente_auto.ps1 -fecha "<FECHA_YYYY_MM_DD>" -moneda "DOLARES CABLE"
 ```
 
 4. **Notificar Finalización:**
