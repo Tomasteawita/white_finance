@@ -68,19 +68,19 @@ class ExtractionPipeline:
             
         return missing
 
-    def run(self, tickers: list, start_date: str = None, end_date: str = None):
+    def run(self, tickers: list, start_date: str = "2023-01-01", end_date: str = None):
         """
         Ejecuta el pipeline.
-        Toma una lista de especies deseadas, verifica si faltan en DB y hace fallback.
+        Toma una lista de especies deseadas y fuerza la subida completa desde start_date.
         """
-        self.logger.info("=== INICIANDO PIPELINE DE EXTRACCION ===")
-        mis_tickers = self.get_missing_tickers(tickers)
+        self.logger.info("=== INICIANDO PIPELINE DE EXTRACCION (FORZADO HISTORICO COMPLETO) ===")
+        mis_tickers = tickers # Ya no filtramos por existentes para asegurar el refresh completo
         
         if not mis_tickers:
-            self.logger.info("Todas las especies solicitadas ya se encuentran consolidadas en base de datos.")
+            self.logger.info("No se proporcionaron especies para procesar.")
             return
             
-        self.logger.info(f"Especies faltantes a orquestar ({len(mis_tickers)}): {mis_tickers}")
+        self.logger.info(f"Especies a orquestar ({len(mis_tickers)}): {mis_tickers}")
         
         for t in mis_tickers:
             self.logger.info(f"\n--- Procesando [{t}] ---")
@@ -194,31 +194,16 @@ class ExtractionPipeline:
         )
 
         today_str: str = date.today().isoformat()
-        fallback_start: str = "2020-01-01"
+        start_date = "2023-01-01"
 
-        # Pasos 7 y 8: Iterar, calcular rango y delegar en extractores con mercado
+        # Pasos 7 y 8: Iterar y delegar en extractores con mercado (siempre desde 2023-01-01)
         for _, row in df_joined.iterrows():
             especie: str = row["Especie"]
             mercado_especie: str = row["mercado"]
-            max_date = row.get("max_date")
 
-            if pd.isna(max_date) or max_date is None:
-                start_date = fallback_start
-                self.logger.info(
-                    f"[{especie}] Sin historial en DB -> desde {start_date} | mercado={mercado_especie}"
-                )
-            else:
-                # +1 dia para no re-insertar el ultimo registro ya persistido
-                start_date = (
-                    pd.Timestamp(max_date) + pd.Timedelta(days=1)
-                ).strftime("%Y-%m-%d")
-                self.logger.info(
-                    f"[{especie}] Ultimo dato: {str(max_date)[:10]} -> desde {start_date} hasta hoy | mercado={mercado_especie}"
-                )
-
-            if start_date > today_str:
-                self.logger.info(f"[{especie}] Ya actualizado al dia de hoy. Saltando.")
-                continue
+            self.logger.info(
+                f"[{especie}] Forzando subida completa desde {start_date} hasta hoy | mercado={mercado_especie}"
+            )
 
             success = False
             for extractor in self.extractors:

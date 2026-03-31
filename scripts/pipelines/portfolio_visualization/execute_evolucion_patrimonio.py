@@ -12,7 +12,7 @@ class EvolucionHistoricaPatrimonio:
         self.ratios_cedear = self.fetch_cedear_ratios()
         self.especies_expresadas_en_100_nominales = ['SNSBO', 'GD35', 'GD30', 'AL30', 'AE38', 'LK01Q']
         self.fcis_abiertos = ['ALGIIIA', 'BMACTAA', 'BULL-IA', 'BULMAAA', 'RIGAHOR']
-        self.path_cuentas_unificadas = '../data/analytics/cuentas_unificadas_sorted.csv'
+        self.path_cuentas_unificadas = '../../../data/analytics/cuentas_unificadas_sorted.csv'
         self.db_uri = "postgresql://postgres:postgres@localhost:5432/postgres"
 
     def fetch_cedear_ratios(self) -> Dict[str, float]:
@@ -91,8 +91,8 @@ class EvolucionHistoricaPatrimonio:
                 cantidad = row['Cantidad']
                 if especie.endswith('.US'):
                     ticker_unificado = especie.replace('.US','')
-                elif especie in ratios_cedear:
-                    cantidad = round(cantidad / ratios_cedear[especie], 2)
+                elif especie in self.ratios_cedear:
+                    cantidad = round(cantidad / self.ratios_cedear[especie], 2)
                     ticker_unificado = especie
                 else:
                     ticker_unificado = especie
@@ -100,7 +100,7 @@ class EvolucionHistoricaPatrimonio:
                 if ticker_unificado not in portfolio:
                     portfolio[ticker_unificado] = 0.0
 
-                if ticker_unificado in fcis_abiertos:
+                if ticker_unificado in self.fcis_abiertos:
                     portfolio[ticker_unificado] += row['Importe'] * -1
                     portfolio[ticker_unificado] = 0.0 if portfolio[ticker_unificado] < 0 else portfolio[ticker_unificado]
                 elif comp == 'VENTA PARIDAD' and (portfolio[ticker_unificado] + cantidad) <= 0:
@@ -163,7 +163,7 @@ class EvolucionHistoricaPatrimonio:
         # Completar días sin operaciones (Forward Fill)
         idx = pd.date_range(holdings_diarios.index.min(), pd.Timestamp.today())
         holdings = holdings_diarios.reindex(idx, method='ffill').fillna(0)
-        df_prices  = get_market_data(self.db_uri)
+        df_prices  = self.get_market_data(self.db_uri)
         serie_ccl = df_prices.drop_duplicates(subset=['date']).set_index('date')['ccl']
 
         precios_pivot = df_prices.pivot(index='date', columns='ticker', values='close_usd')
@@ -174,7 +174,7 @@ class EvolucionHistoricaPatrimonio:
         serie_ccl = serie_ccl.ffill()
         precios_matriz['CCL'] = serie_ccl
         holdings_columns_set = set(holdings.columns)
-        holdings_columns_to_calculate_total = holdings_columns_set.difference(set(fcis_abiertos))
+        holdings_columns_to_calculate_total = holdings_columns_set.difference(set(self.fcis_abiertos))
         holdings_columns_to_calculate_total = holdings_columns_to_calculate_total.difference({'Cash_ARS','Cash_CCL','Cash_MEP', 'VARIAS', 'MEP'})
 
         df_consolidado = pd.concat([holdings, precios_matriz], axis=1)
@@ -209,3 +209,7 @@ class EvolucionHistoricaPatrimonio:
         df_consolidado[['Cash_Total_USD', 'Total_Safe_Valuation', 'Total_Growth_Valuation', 'Patrimonio_USD']].to_csv(
             '../../../data/analytics/portfolio_visualization_data/evolucion_patrimonio.csv'
         )
+
+if __name__ == '__main__':
+    evolucion_patrimonio = EvolucionHistoricaPatrimonio()
+    evolucion_patrimonio.run()

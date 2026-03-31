@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-DATA_DIR = Path("../../../data/marketing_datosdemercado")
+DATA_DIR = Path("../../../data/analytics/marketing_datosdemercado")
 
 
 def get_date_from_filename(filename: str) -> Optional[datetime]:
