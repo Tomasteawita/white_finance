@@ -9,6 +9,7 @@ if str(root_path) not in sys.path:
 
 # Ahora importamos usando rutas absolutas desde la raíz del proyecto
 from scripts.pipelines.AWS.refresh_earnings import main as refresh_earnings
+from scripts.layers.portfolio_visualization.ingest_ccl_mep import main as ingest_ccl_mep
 from scripts.pipelines.portfolio_visualization.execute_unification import main as execute_unification
 from scripts.pipelines.portfolio_visualization.extraction_prices import ExtractionPipeline
 from scripts.pipelines.portfolio_visualization.execute_evolucion_patrimonio import EvolucionHistoricaPatrimonio
@@ -25,6 +26,9 @@ class ExecuteAllPipelines:
     def execute_all_pipelines(self):
         print("--- Iniciando Refresh Earnings ---")
         refresh_earnings()
+        
+        print("\n--- Iniciando Ingesta CCL/MEP ---")
+        ingest_ccl_mep()
         
         print("\n--- Iniciando Unificación de Cuentas ---")
         execute_unification()
