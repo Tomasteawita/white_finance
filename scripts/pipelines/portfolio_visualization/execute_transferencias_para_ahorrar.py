@@ -18,6 +18,9 @@ class ExecutionTransferenciasParaAhorrar:
         os.makedirs('../../../data/analytics', exist_ok=True)
 
         # Exportar a CSV    
-        df_filtrado.to_csv('../../../data/analytics/transferencias_bull_market.csv', sep=',', index=False)
+        df_filtrado.to_csv('../../..//data/analytics/Transferencias Bull Market.csv', sep=',', index=False)
 
         print(f"Archivo exportado exitosamente: {len(df_filtrado)} registros")
+
+if __name__ == "__main__":
+    ExecutionTransferenciasParaAhorrar().execute()

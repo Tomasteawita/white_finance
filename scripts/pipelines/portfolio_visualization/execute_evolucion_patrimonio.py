@@ -12,7 +12,11 @@ class EvolucionHistoricaPatrimonio:
         self.ratios_cedear = self.fetch_cedear_ratios()
         self.especies_expresadas_en_100_nominales = ['SNSBO', 'GD35', 'GD30', 'AL30', 'AE38', 'LK01Q']
         self.fcis_abiertos = ['ALGIIIA', 'BMACTAA', 'BULL-IA', 'BULMAAA', 'RIGAHOR']
-        self.path_cuentas_unificadas = '../../../data/analytics/cuentas_unificadas_sorted.csv'
+        
+        # Obtenemos el path absoluto del directorio del script actual para soportar ejecución desde otras carpetas
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.base_path = os.path.normpath(os.path.join(current_dir, '../../../'))
+        self.path_cuentas_unificadas = os.path.join(self.base_path, 'data/analytics/cuentas_unificadas_sorted.csv')
         self.db_uri = "postgresql://postgres:postgres@localhost:5432/postgres"
 
     def fetch_cedear_ratios(self) -> Dict[str, float]:
@@ -150,7 +154,124 @@ class EvolucionHistoricaPatrimonio:
         df_prices.loc[mask_bonos, 'close_usd'] = df_prices.loc[mask_bonos, 'close_usd'] / 100.0
 
         return df_prices
-    
+
+    def gen_benchmarks(self, df_consolidado: pd.DataFrame):
+        """
+        Genera benchmarks comparativos (SPY, ARGT) basado en los flujos netos de ingresos,
+        y los consolida con el histórico de patrimonio del portfolio.
+        """
+        df_evolucion = df_consolidado.copy()
+        df_evolucion.index.name = 'Fecha'
+        df_evolucion = df_evolucion.reset_index()
+        df = pd.read_csv(
+            self.path_cuentas_unificadas,
+            parse_dates=['Operado', 'Liquida']
+        )
+        df = df[df['Comprobante'].isin([
+            'RECIBO DE COBRO',
+            'ORDEN DE PAGO',
+            'ORD PAGO DOLARES',
+            'REC COBRO DOLARES'
+        ])]
+        df = df.groupby(['Operado', 'Comprobante', 'Origen'], as_index=False)['Importe'].sum()
+        
+        engine = create_engine(self.db_uri)
+        df_ccl = pd.read_sql('SELECT "date", ccl FROM earnings.ccl_mep', engine)
+        df_ccl['date'] = pd.to_datetime(df_ccl['date'])
+        
+        df = df.merge(df_ccl, left_on='Operado', right_on='date', how='left').ffill()
+        df['Importe_USD'] = np.where(
+            df['Origen'] == 'ARS', 
+            df['Importe'] / df['ccl'], 
+            df['Importe']
+        )
+        df['Importe_USD'] = df['Importe_USD'].round(2)
+        df = df[df['Operado'] > '2023-12-01']
+        df = df.groupby(['Operado'], as_index=False)['Importe_USD'].sum()
+        
+        min_date_cartera = df['Operado'].min() if not df.empty else df_evolucion['Fecha'].min()
+        
+        query_spy = "select cast(date as varchar) as date, round(close,2) as close_spy from earnings.historical_prices hp where ticker = 'SPY'"
+        df_spy_prices = pd.read_sql(query_spy, engine)
+        df_spy_prices['date'] = pd.to_datetime(df_spy_prices['date'])
+        
+        query_argt = "select cast(date as varchar) as date, round(close,2) as close_argt from earnings.historical_prices hp where ticker = 'ARGT'"
+        df_argt_prices = pd.read_sql(query_argt, engine)
+        df_argt_prices['date'] = pd.to_datetime(df_argt_prices['date'])
+        
+        engine.dispose()
+
+        df_temp = df_evolucion[['Fecha']].copy()
+        
+        df_temp = df_temp.merge(
+            df_spy_prices,
+            left_on='Fecha',
+            right_on='date',
+            how='left'
+        ).ffill()[['Fecha', 'close_spy']]
+
+        df_temp = df_temp.merge(
+            df_argt_prices,
+            left_on='Fecha',
+            right_on='date',
+            how='left'
+        ).ffill()[['Fecha', 'close_spy', 'close_argt']]
+
+        df_temp = df_temp[df_temp['Fecha'] >= min_date_cartera]
+
+        df_merged = df_temp.merge(
+            df, 
+            left_on='Fecha', 
+            right_on='Operado', 
+            how='left'
+        )
+        df_merged['Importe_USD'] = df_merged['Importe_USD'].fillna(0)
+
+        portfolio = {
+            'patrimonio_spy': 0,
+            'cantidad_spy': 0,
+            'patrimonio_argt': 0,
+            'cantidad_argt': 0
+        }
+        daily_snapshots = []
+
+        for _, row in df_merged.iterrows():
+            fecha = row['Fecha']
+            ultimo_precio_spy = row['close_spy']
+            ultimo_precio_argt = row['close_argt']
+            importe_USD = row['Importe_USD']
+
+            if importe_USD != 0:
+                if pd.notna(ultimo_precio_spy) and ultimo_precio_spy != 0:
+                    portfolio['cantidad_spy'] += importe_USD / ultimo_precio_spy
+                if pd.notna(ultimo_precio_argt) and ultimo_precio_argt != 0:
+                    portfolio['cantidad_argt'] += importe_USD / ultimo_precio_argt
+
+            portfolio['patrimonio_spy'] = portfolio['cantidad_spy'] * ultimo_precio_spy if pd.notna(ultimo_precio_spy) else 0
+            portfolio['patrimonio_argt'] = portfolio['cantidad_argt'] * ultimo_precio_argt if pd.notna(ultimo_precio_argt) else 0
+            
+            snapshot = portfolio.copy()
+            snapshot['fecha'] = fecha
+            daily_snapshots.append(snapshot)
+
+        snapshots_df = pd.DataFrame(daily_snapshots)
+
+        df_final = df_evolucion.merge(
+            snapshots_df, 
+            left_on='Fecha', 
+            right_on='fecha', 
+            how='left'
+        )[['Fecha', 'Cash_Total_USD', 'Total_Safe_Valuation',
+           'Total_Growth_Valuation', 'Patrimonio_USD', 'patrimonio_spy', 'patrimonio_argt']]
+
+        df_final['patrimonio_spy'] = df_final['patrimonio_spy'].fillna(0)
+        df_final['patrimonio_argt'] = df_final['patrimonio_argt'].fillna(0)
+
+        path_out = os.path.join(self.base_path, 'data/analytics/portfolio_visualization_data/evolucion_patrimonio.csv')
+        # Asegurarse de que el directorio padre existe
+        os.makedirs(os.path.dirname(path_out), exist_ok=True)
+        df_final.to_csv(path_out, index=False)
+
     def run(self):
         df = pd.read_csv(
             self.path_cuentas_unificadas,
@@ -205,10 +326,14 @@ class EvolucionHistoricaPatrimonio:
         df_consolidado['Total_Safe_Valuation'] = df_consolidado[safe_assets].sum(axis=1)
         df_consolidado['Total_Growth_Valuation'] = df_consolidado[growth_assets].sum(axis=1)
         df_consolidado['Patrimonio_USD'] = df_consolidado[['Cash_Total_USD', 'Total_Safe_Valuation', 'Total_Growth_Valuation']].sum(axis=1)
-        df_consolidado.index.name = 'Fecha'
-        df_consolidado[['Cash_Total_USD', 'Total_Safe_Valuation', 'Total_Growth_Valuation', 'Patrimonio_USD']].to_csv(
-            '../../../data/analytics/portfolio_visualization_data/evolucion_patrimonio.csv'
-        )
+        df_consolidado = df_consolidado[['Cash_Total_USD', 'Total_Safe_Valuation', 'Total_Growth_Valuation', 'Patrimonio_USD']]
+        
+        self.gen_benchmarks(df_consolidado)
+        
+        # Opcional (mantener comentado):
+        # df_consolidado.to_csv(
+        #     '../../../data/analytics/portfolio_visualization_data/evolucion_patrimonio.csv'
+        # )
 
 if __name__ == '__main__':
     evolucion_patrimonio = EvolucionHistoricaPatrimonio()
