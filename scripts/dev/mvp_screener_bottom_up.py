@@ -177,8 +177,8 @@ def apply_pareto_filter(tickers: List[str], engine: Engine) -> pd.DataFrame:
                 'Ticker': ticker,
                 'ROIC (%)': round(roic * 100, 2),
                 'FCF Yield (%)': round(fcf_yield * 100, 2),
-                'Net Debt': round(net_debt, 2),
-                'Cash': round(cash, 2)
+                'Net Debt': round(net_debt / 1e9, 2),
+                'Cash': round(cash / 1e9, 2)
             })
             
         except Exception as e:
@@ -190,9 +190,9 @@ def apply_pareto_filter(tickers: List[str], engine: Engine) -> pd.DataFrame:
     # Buscamos extremo derecho de la distribución (Asimetría positiva)
     if not df_results.empty:
         # Filtros matemáticos rigurosos
-        mask_roic = df_results['ROIC (%)'] > 15.0#> 15.0
-        mask_fcf = df_results['FCF Yield (%)'] > 1.0#> 4.0 # Superando a los bonos del tesoro
-        mask_debt = df_results['Net Debt'] < 4#< 0 # Caja neta positiva (Downside blindado)
+        mask_roic = df_results['ROIC (%)'] > 15.0
+        mask_fcf = df_results['FCF Yield (%)'] > 4.0 # Superando a los bonos del tesoro
+        mask_debt = df_results['Net Debt'] < 0 # Caja neta positiva (Downside blindado)
         
         oportunidades = df_results[mask_roic & mask_fcf & mask_debt]
         return oportunidades
@@ -200,45 +200,7 @@ def apply_pareto_filter(tickers: List[str], engine: Engine) -> pd.DataFrame:
 
 if __name__ == "__main__":
     # Universo de prueba (Ejemplo de Tech S&P 500)
-    test_tickers = [
-        "AMZN",
-    "IBM",
-    "YPF",
-    "SAN",
-    "CAT",
-    "ASML",
-    "GGAL",
-    "AAPL",
-    "V",
-    "UNH",
-    "META",
-    "MSFT",
-    "AVGO",
-    "LLY",
-    "NVDA",
-    "MU",
-    "TSLA",
-    "INTC",
-    "GOOGL",
-    "AMD",
-    "JPM",
-    "MELI",
-    "BMA",
-    "BBAR",
-    "SUPV",
-    "PAM",
-    "CEPU",
-    "TGS",
-    "EDN",
-    "GLOB",
-    "LOMA",
-    "IRS",
-    "TX",
-    "TS",
-    "CRESY",
-    "TEO",
-    "CAAP"
-    ]
+    test_tickers = ['CSCO', 'GE', 'AMAT', 'INTC', 'PLTR', 'MRK', 'MS', 'UNH', 'RTX', 'GS', 'GEV', 'WFC', 'PM', 'LIN', 'KLAC', 'MCD', 'IBM', 'TMUS', 'AXP', 'PEP']
     try:
         engine = get_db_engine()
         init_db_schema(engine)
