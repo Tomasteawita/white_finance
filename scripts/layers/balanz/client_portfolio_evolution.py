@@ -78,9 +78,17 @@ class BalanzClientPortfolioEvolution:
         query = "SELECT date, ccl FROM earnings.ccl_mep"
         df_ccl = pd.read_sql(query, engine)
         df_ccl['date'] = pd.to_datetime(df_ccl['date'])
-        # Retornar serie con date como índice
         df_ccl = df_ccl.drop_duplicates(subset=['date']).set_index('date')['ccl']
         return df_ccl
+
+    def _get_ipc_series(self) -> pd.DataFrame:
+        """Obtiene la serie histórica de IPC desde PostgreSQL."""
+        engine = create_engine(self.db_uri)
+        query = "SELECT date, monthly FROM argentina_economy.ipc_monthly_year_on_year"
+        df_ipc = pd.read_sql(query, engine)
+        df_ipc['date'] = pd.to_datetime(df_ipc['date'])
+        df_ipc = df_ipc.sort_values('date')
+        return df_ipc
 
     def process_holdings(self):
         """Genera snapshots diarios de holdings leyendo la Cuenta Corriente."""
@@ -208,6 +216,43 @@ class BalanzClientPortfolioEvolution:
         # Total Patrimonio USD = Patrimonio_ARS / CCL
         df_consolidado['Patrimonio_USD'] = df_consolidado['Patrimonio_ARS'] / df_consolidado['CCL']
         
+        # --- NUEVO: Proyección de Capital Inicial por Inflación (IPC) ---
+        initial_capital_ars = df_consolidado['Patrimonio_ARS'].iloc[0]
+        try:
+            df_ipc = self._get_ipc_series()
+            df_ipc['monthly_rate'] = df_ipc['monthly'] / 100.0
+            df_ipc['year_month'] = df_ipc['date'].dt.to_period('M')
+            df_ipc_monthly = df_ipc.groupby('year_month').last().reset_index()
+            
+            df_consolidado['year_month'] = df_consolidado.index.to_period('M')
+            ipc_dict = dict(zip(df_ipc_monthly['year_month'], df_ipc_monthly['monthly_rate']))
+            df_consolidado['monthly_rate'] = df_consolidado['year_month'].map(ipc_dict)
+            
+            # Completar huecos hacia adelante y hacia atrás.
+            # Si los datos de la cartera son más recientes que el último IPC publicado (ej. cartera en Mayo, último IPC en Abril),
+            # rellenamos con el último IPC conocido.
+            ultimo_ipc_conocido = df_ipc_monthly['monthly_rate'].iloc[-1]
+            df_consolidado['monthly_rate'] = df_consolidado['monthly_rate'].fillna(ultimo_ipc_conocido)
+            
+            # Tasa diaria compuesta asumiendo 30 días
+            df_consolidado['daily_inflation_factor'] = (1 + df_consolidado['monthly_rate']) ** (1 / 30.0)
+            
+            # El primer día es la base (factor = 1.0)
+            df_consolidado.iloc[0, df_consolidado.columns.get_loc('daily_inflation_factor')] = 1.0
+            
+            df_consolidado['cumulative_inflation_index'] = df_consolidado['daily_inflation_factor'].cumprod()
+            df_consolidado['Capital_Inicial_Proyectado_IPC_ARS'] = initial_capital_ars * df_consolidado['cumulative_inflation_index']
+            
+            # Añadir las tasas utilizadas en porcentaje
+            df_consolidado['IPC_Diario_%'] = (df_consolidado['daily_inflation_factor'] - 1) * 100
+            df_consolidado['IPC_Mensual_%'] = df_consolidado['monthly_rate'] * 100
+            
+            # Limpiar columnas temporales
+            df_consolidado = df_consolidado.drop(columns=['year_month', 'monthly_rate', 'daily_inflation_factor', 'cumulative_inflation_index'])
+        except Exception as e:
+            self.logger.error(f"Error calculando proyección de IPC: {e}")
+            df_consolidado['Capital_Inicial_Proyectado_IPC_ARS'] = initial_capital_ars
+
         # Formatear el output
         df_consolidado.index.name = 'Fecha'
         df_final = df_consolidado.reset_index()

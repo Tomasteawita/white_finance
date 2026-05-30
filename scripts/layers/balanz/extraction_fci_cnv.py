@@ -1,3 +1,8 @@
+"""
+La información sale obtenida de acá:
+https://www.cnv.gov.ar/SitioWeb/FondosComunesInversion/CuotaPartes
+"""
+
 import os
 import sys
 import glob

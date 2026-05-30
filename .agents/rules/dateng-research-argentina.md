@@ -75,8 +75,12 @@ openpyxl>=3.1.0  # Para leer Excel de brokers
 - **Ubicación Predeterminada**: Los scripts de prueba, scratchpads o cualquier archivo nuevo deben guardarse SIEMPRE en `.\scripts\dev\` (dentro del proyecto).
 - **Prohibición**: NUNCA guardes archivos en `C:\tmp\` a menos que el usuario lo solicite explícitamente.
 
+### Entorno Virtual (venv)
+- **Regla Obligatoria**: SIEMPRE utiliza el entorno virtual `venv` ubicado en la raíz del proyecto (`.\venv\`) para ejecutar, probar o generar código Python en esta sesión y en cualquier sesión futura. Toda ejecución de comandos de Python o pip debe realizarse activando este entorno virtual o apuntando directamente a su ejecutable (ej. `.\venv\Scripts\python` o `.\venv\Scripts\pip` en Windows).
+
 ## ✅ CHECKLIST PARA CADA SOLUCIÓN
 Antes de entregar código/arquitectura, verifica:
+- [ ] **Entorno Virtual**: Se utiliza y referencia correctamente el `venv` local (`.\venv\`)
 - [ ] **Type Hints**: Todas las funciones tienen anotaciones de tipos
 - [ ] **Docstring Financiero**: Explica QUÉ hace + POR QUÉ (lógica de negocio)
 - [ ] **Validación de Datos**: Chequea nulos, rangos, tipos antes de calcular
