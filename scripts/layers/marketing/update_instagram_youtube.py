@@ -4,7 +4,10 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-DATA_DIR = Path("../../../data/analytics/marketing_datosdemercado")
+# La raíz del proyecto está 4 niveles arriba del archivo actual:
+# scripts/layers/marketing/update_instagram_youtube.py
+DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "analytics" / "marketing_datosdemercado"
+
 
 
 def get_date_from_filename(filename: str) -> Optional[datetime]:
