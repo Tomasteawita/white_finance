@@ -61,6 +61,8 @@ class EvolucionHistoricaPatrimonio:
         # Diccionario auxiliar para trackear el saldo anterior de cada cuenta corriente
         last_saldos = {'ARS': 0.0, 'USD MEP': 0.0, 'USD CCL': 0.0}
         
+        processed_numeros_paridad = set()
+        
         daily_snapshots = []
         
         for _, row in transactions_df.iterrows():
@@ -80,11 +82,13 @@ class EvolucionHistoricaPatrimonio:
             # if especie == 'VARIAS':
             #     print(f'{comp}, fecha: {fecha}, monto: {importe}, saldo_actual: {saldo_actual}')
             if origen == 'ARS': 
-                portfolio['Cash_ARS'] = round(importe + portfolio['Cash_ARS'], 2)
+                if pd.notna(row['Saldo']):
+                    portfolio['Cash_ARS'] = round(saldo_actual, 2)
+                else:
+                    portfolio['Cash_ARS'] = round(importe + portfolio['Cash_ARS'], 2)
             elif origen == 'USD MEP': 
                 if comp == 'VENTA PARIDAD' and (portfolio['Cash_MEP'] + importe) != saldo_actual:        
                     portfolio['Cash_MEP'] = round(saldo_actual, 2)
-                    continue
                 else:
                     portfolio['Cash_MEP'] = round(portfolio['Cash_MEP'] + importe, 2)
             elif origen == 'USD CCL':
@@ -107,10 +111,12 @@ class EvolucionHistoricaPatrimonio:
                 if ticker_unificado in self.fcis_abiertos:
                     portfolio[ticker_unificado] += row['Importe'] * -1
                     portfolio[ticker_unificado] = 0.0 if portfolio[ticker_unificado] < 0 else portfolio[ticker_unificado]
-                elif comp == 'VENTA PARIDAD' and (portfolio[ticker_unificado] + cantidad) <= 0:
-                    portfolio[ticker_unificado] = 0.0
-                elif comp == 'COMPRA PARIDAD' and (portfolio[ticker_unificado] + cantidad) == (cantidad * 2):
-                    pass
+                elif pd.notna(comp) and 'PARIDAD' in comp:
+                    if numero not in processed_numeros_paridad:
+                        portfolio[ticker_unificado] += round(cantidad, 2)
+                        processed_numeros_paridad.add(numero)
+                    if portfolio[ticker_unificado] < 0:
+                        portfolio[ticker_unificado] = 0.0
                 # elif comp == 'VENTA' and origen == 'ARS' and (portfolio[ticker_unificado] + cantidad) < 0:
                 #     portfolio[ticker_unificado] = 0.0
                 else:

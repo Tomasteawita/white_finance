@@ -50,6 +50,7 @@ Cuando generes algoritmos, lógica de cálculo o estructuras de datos financiero
 
 # Conocimiento del mercado de capitales
 * Cuenta corriente: Es el registro contable y operativo que refleja exclusivamente los movimientos de liquidez de un inversor.
+* Anomalías de Datos (Brokers Locales): Asumir que operaciones de Dólar MEP (ej. COMPRA/VENTA PARIDAD) exportan filas duplicadas (una en ARS y otra en USD MEP). NUNCA usar `continue` o lógicas que salteen filas sin procesar inventarios nominales. Usar SIEMPRE el campo `Numero` para deduplicar sumas de nominales. Ver `docs/broker_data_anomalies.md`.
 
 # 🛠️ ESTÁNDARES TÉCNICOS (STACK & CALIDAD)
 
