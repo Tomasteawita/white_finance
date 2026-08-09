@@ -1,0 +1,10 @@
+﻿.\venv\Scripts\python :   File "<string>", line 29
+At line:1 char:1
++ .\venv\Scripts\python -c "
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  File "<string>", line 29:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    print(f'[{sender}] {str(row[" full_text\])[:200]}')
+                                ^
+SyntaxError: unterminated string literal (detected at line 29)

@@ -1,0 +1,167 @@
+﻿Top conversaciones por mensajes de cliente:
+conversation_id
+_valenbaudrix_1772907744138521          39
+matiasmartinez_1358290425719770         20
+ezequiel_2438953443251215               19
+mariasoledadsanchez_2546612189112380    17
+iara_1601953911438093                   16
+gero_1553179122884909                   14
+donatoadb_4633958110207819              14
+patricioarmoa_27507338522296137         13
+lean_1039219032190247                   12
+gabrielzabala_1363419268454430          11
+Name: full_text, dtype: int64
+
+============================================================
+Conversacion: _valenbaudrix_1772907744138521
+============================================================
+[CLIENTE] FLUJO
+[TOMAS] _valenbaudrix replied to an ad. View ad(https://www.instagram.com/p/DbQ4TvBAIZ3/)
+[TOMAS] [AUDIO TRANSCRITO]: íVal a la bala y en c≤mo estßs un gusto suerte!
+[CLIENTE] Tomiiii
+[CLIENTE] Yo te re banco me podes seguir
+[TOMAS] [AUDIO TRANSCRITO]: te podrφas hacer algunas preguntas para arrancar con el tema de los ticos.
+[CLIENTE] Me seguissss
+[CLIENTE] Porfa
+[TOMAS] [AUDIO TRANSCRITO]: Si, ahφ te mande la solicitud.
+[TOMAS] [AUDIO TRANSCRITO]: ┐En quΘ tracos se te pusi≤?
+[CLIENTE] Gray
+[CLIENTE] Gracias
+[CLIENTE] Me haces un par de preguntas para ver como estoy?
+[TOMAS] [AUDIO TRANSCRITO]: Sφ, para que no sonos un poco mßs si ver en quΘ situaci≤n estß ahora y ver si te puedo ayudar. Ahora ven caso de que hoy en dφa en este es la gran de eso.
+[TOMAS] [AUDIO TRANSCRITO]: ┐Quieres contar un poco a quΘ dedicas si hace cußnto lo hace?
+[CLIENTE] Me dedico a vender pan
+[CLIENTE] Na joda
+[CLIENTE] Mi mama se dedica a ser enfermera
+[TOMAS] Okey, y vos?
+[CLIENTE] Vendo autos con mi papa
+[CLIENTE] Los dos juntos
+[TOMAS] Re bien
+[CLIENTE] Gracias
+[TOMAS] Pareces joven encima
+[CLIENTE] Sisisis
+[CLIENTE] Tengo 14
+[CLIENTE] Nada mas q parezco mas chico
+[CLIENTE] Jajja
+[TOMAS] Es un mont≤n, bien ahφ, y contame hoy en dφa tenes alguna meta financiera que quieras alcanzar?
+[CLIENTE] Mira yo quiero ser futbolista profesional pero nose como
+[CLIENTE] No tiene nada q ver
+[CLIENTE] Pero yo quiero eso
+[CLIENTE] Vos me podes aconsejar
+[TOMAS] Pasa que yo no soy profesional en eso ??
+[CLIENTE] Jajajajaj
+[CLIENTE] Buebo
+[CLIENTE] Bueno
+[CLIENTE] Me voy a comer despues hablamos
+[CLIENTE] Dejo el ig abierto
+[TOMAS] [AUDIO TRANSCRITO]: a lo sumo te puedo aconsejar que sigas a personas que ten en si vas a hacer f·tbolista en primera avenacional.
+[CLIENTE] Daleee
+[TOMAS] [AUDIO TRANSCRITO]: Pero se puede seguir y mandarlo un mensaje una persona que, minimamente estß en la primera vez, no serß una persona profesional por ahφ de la manera que lo quieras ser, pero estoy mßs seguro que una persona que estΘ en ese lugar. Hace mßs chance que te conteste.
+[CLIENTE] Podes seguir a este
+[CLIENTE] nan
+[CLIENTE] El quiere q lo siga un verificado
+[CLIENTE] Vos pagaste para ser???
+[TOMAS] Mira no voy a seguir a gente porque sφ
+[CLIENTE] A el nada massss
+[CLIENTE] Podessss
+[CLIENTE] ???
+[TOMAS] Para que lo necesitan?
+[CLIENTE] Porq estamos haciendo una meta de quien lo sigue un verificado
+[CLIENTE] Necesitamos 5
+[CLIENTE] Con vos somos 1
+[CLIENTE] Podes porfiii
+[TOMAS] No mira hasta acß lleg≤, te deseo exitos
+[CLIENTE] Ok
+
+============================================================
+Conversacion: matiasmartinez_1358290425719770
+============================================================
+[CLIENTE] FLUJO
+[TOMAS] Matias Martinez replied to an ad. View ad(https://www.instagram.com/p/DbQ4TvBAIZ3/)
+[TOMAS] [AUDIO TRANSCRITO]: Bueno, Matφas, como estas te molestas y te hago algunas preguntas para arrancar con el diagn≤stico.
+[CLIENTE] No para nada compa
+[CLIENTE] Pregunte nomas
+[TOMAS] [AUDIO TRANSCRITO]: Feφa en Matφas, la primera pregunta mßs que nada para conocerlo es un poco mßs que es que te dedicas como profesional.
+[CLIENTE] Soy enfermero pero ando sin laburo
+[CLIENTE] Estoy mal mal con los laburos
+[TOMAS] Lamento eso Matφas
+[TOMAS] Hoy en dφa estar buscando laburo en el mismo rubro?
+[CLIENTE] No no me quiero dedicar a eso
+[CLIENTE] Se hacer otros oficios
+[TOMAS] Ha okey, entonces hoy en dφa estßs trabajando de un oficio de manera independiente?
+[CLIENTE] Si
+[CLIENTE] Mi idea es meterle al campo con animales pero no puedo arrancar porque nesesito un buen monto de dinero
+[CLIENTE] Algun dia se tiene que dar jaja
+[CLIENTE] Que desis vos tomas
+[TOMAS] Ese objetivo me parece muy valioso la verdad
+[TOMAS] Buscas un poco mßs de libertad?
+[TOMAS] Y hoy en dφa quΘ es lo que mßs te estß contando para juntar la plata para ese objetivo?
+[CLIENTE] Pasa que vivo solo y tengo muchos servicios que pagar, alquiler, luz agua, wifi y llego apenas a fin de mes y asi sucesivamente
+[CLIENTE] Complicada la vida de adulto eh jaja
+[TOMAS] Sisi lo entiendo, en su momento cuando trabajaba de guardavidas me pasaba, Si me lo permitφs, ┐te puedo ofrecer una recomendaci≤n rßpida en base a este problema que estßs teniendo?
+[CLIENTE] Sisi desime
+[TOMAS] Buenφsimo. Mirß, el error mßs com·n que veo en profesionales independientes con los que trabajΘ es que tienen la plata del negocio y personal totalmente mezclada. Eso genera que empiecen a gastar un mont≤n y al final del mes cuando queres ahorrar o invertir en tu negocio, se queden sin capital.
+[TOMAS] La clave no es intentar facturar mßs, sin≤ mßs bien organizar sus cuentas de manera que tengan:
+1. Una cuenta para su negocio (mercado pago preferiblemente)
+2. Una cuenta para sus gastos personales
+3. Una cuenta para ahorrar
+
+De manera que, cobren a sus clientes dentro de esa cuenta de negocio, acum
+[TOMAS] De esta manera, van a empezar a ahorrar sacandose la plata de encima para no verla y no estar tentados a usarla. Y teniendo una cuenta personal separada de la del negocio, van a tener un presupuesto que los limita a gastar mßs de lo necesario para gastos que son exclusivamente personales o del negoc
+[TOMAS] ┐Te hace sentido esto que te comento?┐te suena a que es parte de lo que te hace falta para avanzar?
+[CLIENTE] Si comprendo es bueno eso
+[CLIENTE] No soy un chico gastador siempre trato de gastar lo menos posible
+[CLIENTE] Pero gracias por tu consejo tomas
+[TOMAS] Por favor, la idea es poder darte todas las herramientas para que puedas arrancar ahorrar
+[TOMAS] En este sentido y si te parece que eso te puede llegar a servir
+[TOMAS] Si te parece, podemos tener una llamada de 1 horita donde miro tu situaci≤n, veo d≤nde estßn los principales puntos de mejora y, si veo que realmente te puedo ayudar, te explico c≤mo trabajo. ┐Te gustarφa?
+[CLIENTE] Bueno dale tomas otro dia organizamos la llamada
+[TOMAS] Bueno dale, mira, se que en el dφa debes estar lleno de cosas y sinceramente no te quiero joder mßs adelante
+[TOMAS] Si sabes que tenes libre uno de estos dφas, te paso un link para que puedas agendarte un espacio ??
+[TOMAS] https://calendly.com/cuevatomass02/sistema-de-gestion
+[CLIENTE] Dale tomas muchas gracia
+[TOMAS] Muchas gracias a vos por la charla Matias, un gusto conocerte ??
+[CLIENTE] Igualmente tomas
+
+============================================================
+Conversacion: ezequiel_2438953443251215
+============================================================
+[TOMAS] You sent an attachment.
+[TOMAS] Enviame la palabra FLUJO y te hago un diagnostico gratuito para que puedas ahorrar y construir tu tranquilidad financiera
+[CLIENTE] Flujo
+[TOMAS] Buenas Ezequiel ┐C≤mo estßs? Un gusto hablarte ??. Me encantarφa conocer un poco mßs sobre vos para poder hacerte un primer diagn≤stico. ┐Te molesta si te hago 2 o preguntas?
+[CLIENTE] Buenas tardes tomas
+[CLIENTE] Igualmente un gusto
+[CLIENTE] Si decime
+[CLIENTE] Igualmente te ne en cuenta que si no te respondo es porque estoy en la calle
+[CLIENTE] Vine a ver a una amiga que estß internada
+[CLIENTE] Por eso
+[TOMAS] Si no hay problema, lo que menos quiero (y mßs en la situaci≤n en la que estßs) es joderte con que me respondas al instante
+[TOMAS] Te querφa consultar primero que nada ┐a quΘ te dedicas como profesional independiente y hace cußnto que lo haces?
+[CLIENTE] Actualmente estudio
+[CLIENTE] Para ser directo tΘcnico de f·tbol
+[CLIENTE] Reacted ?? to your message 
+[TOMAS] Interesante muy potente la carrera, Θxitos con eso ??, y en relaci≤n a lo que viste en el vφdeo, ┐Que te motivo a mandarme la palabra FLUJO?
+[CLIENTE] Para aprender a manejarme de manera financiera
+[CLIENTE] Porque todavφa nosΘ manejarme
+[CLIENTE] Plata que tengo la quiero gastar enseguida
+[TOMAS] En todo este tiempo que venφs trabajando, ┐Intentaste por tu cuenta tener tus propios ahorros, las finanzas de tu negocio y tu vida personal ordenadas?
+[CLIENTE] Si
+[TOMAS] Y que fue lo que mßs te trab≤ que no lograste consolidar ahorros a largo plazo?
+[CLIENTE] Que hago gasto al pedo
+[TOMAS] Y si proyectamos de acß a un a±o si te pudieras acomodar para ahorrar y gastar solo lo necesario, ┐Cußl es la meta o hito Financiero que estßs buscando?
+[CLIENTE] Si
+[CLIENTE] Y comprarme mφ primer vehφculo
+[CLIENTE] Reminder: Reply to Ezequiel? They're waiting for your response.
+[TOMAS] Si me lo permitφs, ┐te puedo ofrecer una recomendaci≤n rßpida en base a este problema que estßs teniendo?
+[CLIENTE] Si obvio
+[TOMAS] Buenφsimo. Mirß, el error mßs com·n que veo en profesionales independientes con los que trabajΘ es que tienen la plata del negocio y personal totalmente mezclada. Eso genera que empiecen a gastar un mont≤n y al final del mes cuando queres ahorrar o invertir en tu negocio, se queden sin capital.
+[TOMAS] La clave no es intentar facturar mßs, sin≤ mßs bien organizar sus cuentas de manera que tengan:
+1. Una cuenta para su negocio (mercado pago preferiblemente)
+2. Una cuenta para sus gastos personales
+3. Una cuenta para ahorrar
+
+De manera que, cobren a sus clientes dentro de esa cuenta de negocio, acum
+[TOMAS] De esta manera, van a empezar a ahorrar sacandose la plata de encima para no verla y no estar tentados a usarla. Y teniendo una cuenta personal separada de la del negocio, van a tener un presupuesto que los limita a gastar mßs de lo necesario para gastos que son exclusivamente personales o del negoc
+[TOMAS] ┐Te hace sentido esto que te comento?┐te suena a que es parte de lo que te hace falta para avanzar?
+[TOMAS] Ezequiel! Dejame saber si querΘs seguir esta conversaci≤n o no asi dejo de escribirte. Es parte de mi trabajo pero no quiero molestarte

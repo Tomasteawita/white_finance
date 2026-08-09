@@ -1,0 +1,18 @@
+﻿Total FLUJO conversations: 193
+Total filas en esas conversaciones: 1699
+Mensajes cliente por conversacion (stats):
+count    193.000000
+mean       3.393782
+std        4.372066
+min        1.000000
+25%        1.000000
+50%        2.000000
+75%        4.000000
+max       39.000000
+Name: full_text, dtype: float64
+
+--- Sample conversacion 925752117234798 ---
+               sender_name                                                                                                        full_text
+3906  Tomas Santiago Cueva                                                                                          You sent an attachment.
+3907  Tomas Santiago Cueva  Enviame la palabra FLUJO y te hago un diagnostico gratuito para que puedas construir tu tranquilidad financiera
+3908                ??????                                                                                                            FLUJO
