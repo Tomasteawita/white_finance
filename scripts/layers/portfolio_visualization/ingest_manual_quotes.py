@@ -28,6 +28,11 @@ def main():
         ext = os.path.splitext(f)[1].lower()
         base_name = os.path.basename(f)
         
+        if base_name == "fci_quotes_historico.csv" or "FCIs_cnv.gov.ar_SitioWeb_FondosComunesInversion_Cuotapartes" in f:
+            logger.info(f"Omitiendo archivo: {base_name}")
+            continue
+
+        
         if ext == ".csv":
             logger.info(f"Procesando CSV (Rava): {base_name}")
             df = pd.read_csv(f)

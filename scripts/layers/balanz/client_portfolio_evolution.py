@@ -47,13 +47,10 @@ class BalanzClientPortfolioEvolution:
         self.cc_path = self._find_cc_file()
 
     def _find_cc_file(self) -> str:
-        import glob
-        pattern = os.path.join(self.cc_dir, '*.xlsx')
-        files = glob.glob(pattern)
-        if not files:
-            raise FileNotFoundError(f"No se encontró ningún archivo de Cuenta Corriente en {self.cc_dir}")
-        # Asumimos que toma el primero/único archivo disponible
-        return files[0]
+        cc_file = os.path.join(self.cc_dir, 'cuenta_corriente_historico.csv')
+        if not os.path.exists(cc_file):
+            raise FileNotFoundError(f"No se encontró cuenta_corriente_historico.csv en {self.cc_dir}")
+        return cc_file
 
     def load_maps(self) -> dict:
         try:
@@ -92,7 +89,7 @@ class BalanzClientPortfolioEvolution:
 
     def process_holdings(self):
         """Genera snapshots diarios de holdings leyendo la Cuenta Corriente."""
-        df_cc = pd.read_excel(self.cc_path, sheet_name=0)
+        df_cc = pd.read_csv(self.cc_path, sep="|")
         
         # Validar columnas
         if 'Fecha' not in df_cc.columns or 'Descripcin' not in df_cc.columns:

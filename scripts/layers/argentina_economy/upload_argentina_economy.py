@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────
 # Paths & Constantes
 # ──────────────────────────────────────────────────────────────
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DATA_DIR = BASE_DIR / "data" / "argentina_economy"
 RIPTE_PDF = DATA_DIR / "RIPTE mensual 1994-marzo 2026.pdf"
 IPC_XLS = DATA_DIR / "IPC - historical 9 years.xls"
