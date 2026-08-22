@@ -18,11 +18,16 @@ def get_engine():
     conn_str = f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{db}"
     return create_engine(conn_str)
 
+import sys
+
 def main():
     folder = r"c:\Users\tomas\white_finance\data\analytics\cotizaciones"
     engine = get_engine()
     
-    files = glob.glob(os.path.join(folder, "*.*"))
+    if len(sys.argv) > 1:
+        files = sys.argv[1:]
+    else:
+        files = glob.glob(os.path.join(folder, "*.*"))
     
     for f in files:
         ext = os.path.splitext(f)[1].lower()
