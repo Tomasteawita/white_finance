@@ -1,19 +1,22 @@
 import os
 import sys
+from pathlib import Path
 
-# Agregamos la ruta del proyecto actual al path para importar correctamente
-sys.path.append(r'c:\Users\tomas\white_finance\scripts\layers')
+# Buscamos la raíz del proyecto dinámicamente (4 niveles arriba desde este archivo)
+root_path = Path(__file__).resolve().parent.parent.parent.parent
+sys.path.append(str(root_path / "scripts" / "layers"))
+
 from portfolio_visualization.unify_accounts_db import UnifiedAccountPricer
 
 def main():
     print("Iniciando la Dolarización Unificada de Cuentas Corrientes...")
     
-    # Rutas absolutas para máxima seguridad en ejecución
-    csv_pesos = r'c:\Users\tomas\white_finance\data\analytics\cuenta_corriente_historico.csv'
-    csv_mep = r'c:\Users\tomas\white_finance\data\analytics\cuenta_corriente_dolares_historico.csv'
-    csv_ccl = r'c:\Users\tomas\white_finance\data\analytics\cuenta_corriente_dolares_cable_historico.csv'
+    # Rutas dinámicas
+    csv_pesos = str(root_path / "data" / "analytics" / "cuenta_corriente_historico.csv")
+    csv_mep = str(root_path / "data" / "analytics" / "cuenta_corriente_dolares_historico.csv")
+    csv_ccl = str(root_path / "data" / "analytics" / "cuenta_corriente_dolares_cable_historico.csv")
     
-    output_path = r'c:\Users\tomas\white_finance\data\analytics\cuentas_unificadas_sorted.csv'
+    output_path = str(root_path / "data" / "analytics" / "cuentas_unificadas_sorted.csv")
 
     # Inicializamos el orquestador
     pricer = UnifiedAccountPricer(

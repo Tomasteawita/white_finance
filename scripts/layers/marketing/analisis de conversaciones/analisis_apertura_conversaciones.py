@@ -15,8 +15,8 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-INPUT_JSONL = Path("D:/DatosDeMercado/marketing_data/instagram_20260820/processed/chat_corpus_nlp.jsonl")
-OUTPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260820/processed/analisis_apertura.csv")
+INPUT_JSONL = Path("D:/DatosDeMercado/marketing_data/instagram_20260826/processed/chat_corpus_nlp.jsonl")
+OUTPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260826/processed/analisis_apertura.csv")
 TOMAS_NAME_PATTERN = "Cueva"
 
 def contar_palabras(texto: str) -> int:

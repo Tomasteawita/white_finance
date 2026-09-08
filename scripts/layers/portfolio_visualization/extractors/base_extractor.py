@@ -18,7 +18,9 @@ class BaseExtractor(ABC):
 
     def _init_db(self):
         """Inicializa en el constructor la conexión a Postgres aprovechando SQLAlchemy"""
-        load_dotenv(r"c:\Users\tomas\white_finance\.env")
+        from pathlib import Path
+        env_path = Path(__file__).resolve().parent.parent.parent.parent.parent / '.env'
+        load_dotenv(env_path)
         user = os.getenv("POSTGRE_USER", "postgres")
         pwd = os.getenv("POSTGRE_PASSWORD", "postgres")
         host = os.getenv("POSTGRE_HOST", "localhost")

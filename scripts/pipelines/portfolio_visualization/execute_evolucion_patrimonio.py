@@ -8,16 +8,24 @@ from dotenv import load_dotenv
 class EvolucionHistoricaPatrimonio:
 
     def __init__(self):
-        load_dotenv()
-        self.ratios_cedear = self.fetch_cedear_ratios()
-        self.especies_expresadas_en_100_nominales = ['SNSBO', 'GD35', 'GD30', 'AL30', 'AE38', 'LK01Q']
-        self.fcis_abiertos = ['ALGIIIA', 'BMACTAA', 'BULL-IA', 'BULMAAA', 'RIGAHOR']
-        
-        # Obtenemos el path absoluto del directorio del script actual para soportar ejecución desde otras carpetas
+        # Primero configuramos paths y db_uri
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_path = os.path.normpath(os.path.join(current_dir, '../../../'))
         self.path_cuentas_unificadas = os.path.join(self.base_path, 'data/analytics/cuentas_unificadas_sorted.csv')
-        self.db_uri = "postgresql://postgres:postgres@localhost:5432/postgres"
+        
+        env_path = os.path.join(self.base_path, '.env')
+        load_dotenv(env_path)
+        user = os.getenv("POSTGRE_USER", "postgres")
+        pwd = os.getenv("POSTGRE_PASSWORD", "postgres")
+        host = os.getenv("POSTGRE_HOST", "localhost")
+        port = os.getenv("POSTGRE_PORT", "5432")
+        db = os.getenv("POSTGRE_DB", "postgres")
+        self.db_uri = f"postgresql://{user}:{pwd}@{host}:{port}/{db}"
+
+        # Luego inicializamos los atributos que dependen de db_uri
+        self.ratios_cedear = self.fetch_cedear_ratios()
+        self.especies_expresadas_en_100_nominales = ['SNSBO', 'GD35', 'GD30', 'AL30', 'AE38', 'LK01Q']
+        self.fcis_abiertos = ['ALGIIIA', 'BMACTAA', 'BULL-IA', 'BULMAAA', 'RIGAHOR']
 
     def fetch_cedear_ratios(self) -> Dict[str, float]:
         """
@@ -27,12 +35,7 @@ class EvolucionHistoricaPatrimonio:
         antes de la conversión a diccionario.
         """
         # Construcción de conexión (ajusta según tus variables en .env)
-        user = 'postgres'
-        pw = 'postgres'
-        host = 'localhost'
-        db = 'postgres'
-        
-        engine: Engine = create_engine(f"postgresql://{user}:{pw}@{host}:5432/{db}")
+        engine: Engine = create_engine(self.db_uri)
         
         query: str = "SELECT ticker, ratio FROM earnings.ratios_cedears"
         

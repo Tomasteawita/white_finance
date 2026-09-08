@@ -48,3 +48,20 @@ services:
       # Montar ./data completo para acceder a profit.csv y cuentas corrientes
       - ./data/analytics:/home/jovyan/data
     command: [ "python", "/home/jovyan/apps/dashboard.py" ]
+  frontend:
+    container_name: white_finance-frontend
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    restart: always
+    ports:
+      - 8501:8501
+    env_file:
+      - .env
+    environment:
+      - POSTGRE_HOST=postgres
+    volumes:
+      - ./apps:/app/apps
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+      - ./.env:/app/.env

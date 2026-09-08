@@ -21,3 +21,4 @@ plotly>=5.22.0
 gunicorn>=22.0.0
 yfinance
 psycopg2
+boto3

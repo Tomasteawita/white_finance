@@ -38,7 +38,9 @@ class ExtractionPipeline:
         ]
 
     def _init_db(self):
-        load_dotenv(r"c:\Users\tomas\white_finance\.env")
+        from pathlib import Path
+        env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+        load_dotenv(env_path)
         user = os.getenv("POSTGRE_USER", "postgres")
         pwd = os.getenv("POSTGRE_PASSWORD", "postgres")
         host = os.getenv("POSTGRE_HOST", "localhost")
@@ -111,8 +113,11 @@ class ExtractionPipeline:
     # ------------------------------------------------------------------
     def run_from_cuentas_corrientes(
         self,
-        csv_path: str = r"c:\Users\tomas\white_finance\data\analytics\cuentas_unificadas_sorted.csv",
+        csv_path: str = None,
     ) -> None:
+        if csv_path is None:
+            from pathlib import Path
+            csv_path = str(Path(__file__).resolve().parent.parent.parent.parent / "data" / "analytics" / "cuentas_unificadas_sorted.csv")
         """
         Orquestador que detecta las especies faltantes o desactualizadas en
         `earnings.historical_prices` a partir del CSV consolidado de cuentas

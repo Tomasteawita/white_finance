@@ -10,7 +10,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - [%(levelname)s] - 
 logger = logging.getLogger("TCExtractor")
 
 def get_engine():
-    load_dotenv(r'c:\Users\tomas\white_finance\.env')
+    from pathlib import Path
+    env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+    load_dotenv(env_path)
     user = os.getenv("POSTGRE_USER", "postgres")
     pwd = os.getenv("POSTGRE_PASSWORD", "postgres")
     host = os.getenv("POSTGRE_HOST", "localhost")

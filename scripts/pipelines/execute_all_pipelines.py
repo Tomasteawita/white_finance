@@ -1,6 +1,7 @@
 import sys
 import os
 from pathlib import Path
+import argparse
 
 # Configuración de rutas para importar desde el proyecto
 root_path = Path(__file__).resolve().parent.parent.parent
@@ -25,7 +26,7 @@ class ExecuteAllPipelines:
 
     def execute_all_pipelines(self):
         print("--- Iniciando Refresh Earnings ---")
-        refresh_earnings()
+        refresh_earnings(self.partition_date)
         
         print("\n--- Iniciando Ingesta CCL/MEP ---")
         ingest_ccl_mep()
@@ -43,9 +44,10 @@ class ExecuteAllPipelines:
         self.execution_transferencias_para_ahorrar.execute()
 
 if __name__ == "__main__":
-    # Puedes pasar la fecha de partición si es necesaria para refresh_earnings
-    # o manejarla internamente. Por ahora inicializamos con un placeholder.
-    pipeline = ExecuteAllPipelines(partition_date="hoy")
+    parser = argparse.ArgumentParser(description="Ejecutar todos los pipelines")
+    parser.add_argument("--date", type=str, default="hoy", help="Fecha de partición (ej. YYYY-MM-DD)")
+    args = parser.parse_args()
+    
+    # Se pasa la fecha de partición recibida
+    pipeline = ExecuteAllPipelines(partition_date=args.date)
     pipeline.execute_all_pipelines()
-
-

@@ -1,37 +1,40 @@
 """
-refresh_earnings.py
-===================
-Traduce el workflow `.agents/workflows/refresh_earnings.md` a Python puro.
-
-Pasos:
-  1. Recibe la fecha (argumento CLI o interactivo) en formato YYYY-MM-DD.
-  2. Copia los archivos Excel desde Descargas → withe-finance-ingest.
-  3. Invoca ingest_cuenta_corriente_auto.ps1 para PESOS, DOLARES y DOLARES CABLE.
-  4. Notifica al usuario que debe actualizar ganancias_realizadas.ipynb.
-
-Uso:
-  python refresh_earnings.py --fecha 2024-01-15
-  python refresh_earnings.py                    # pide la fecha interactivamente
+refresh_earnings.py (Pure Python Version)
+=========================================
+Lógica de ingesta de archivos Excel de cuentas corrientes a AWS S3.
+Valida, sube a S3, dispara la Step Function y descarga el resultado,
+sin depender de PowerShell. Todo usando boto3.
 """
 
 import argparse
 import logging
 import re
-import shutil
-import subprocess
 import sys
+import os
+import json
+import time
 from datetime import datetime
 from pathlib import Path
+import boto3
 
 # ---------------------------------------------------------------------------
-# Configuración de paths (espeja la configuración del script .ps1)
+# Configuración de paths dinámicos
 # ---------------------------------------------------------------------------
-DOWNLOADS_DIR = Path(r"C:\Users\tomas\Downloads")
-INGEST_DIR = Path(r"C:\Users\tomas\withe-finance-ingest")
-PROJECT_DIR = Path(r"C:\Users\tomas\white_finance")
-PS1_SCRIPT = PROJECT_DIR / "scripts" / "layers" / "AWS" / "raw" / "ingest" / "ingest_cuenta_corriente_auto.ps1"
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+INGEST_DIR = PROJECT_DIR / "data" / "in"
+ANALYTICS_DIR = PROJECT_DIR / "data" / "analytics"
+
+# Agregamos el path de los validators para poder importarlos dinámicamente
+VALIDATORS_PATH = PROJECT_DIR / "scripts" / "layers" / "AWS" / "raw" / "ingest" / "validators"
+sys.path.append(str(VALIDATORS_PATH))
+from main import main as validator_main
 
 MONEDAS: list[str] = ["PESOS", "DOLARES", "DOLARES CABLE"]
+
+# AWS Config
+S3_BUCKET = "withefinance-raw"
+S3_PREFIX = "data/in"
+STATE_MACHINE_ARN = "arn:aws:states:us-east-2:515966533232:stateMachine:WitheFinance-Historical-Profits"
 
 # ---------------------------------------------------------------------------
 logging.basicConfig(
@@ -41,14 +44,7 @@ logging.basicConfig(
 logger = logging.getLogger("refresh_earnings")
 
 
-# ---------------------------------------------------------------------------
-# Paso 1: Validar la fecha
-# ---------------------------------------------------------------------------
 def solicitar_fecha(fecha_arg: str | None) -> str:
-    """
-    Devuelve la fecha validada en formato YYYY-MM-DD.
-    Si no se recibe por argumento, la pide interactivamente.
-    """
     patron = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
     if fecha_arg:
@@ -66,88 +62,147 @@ def solicitar_fecha(fecha_arg: str | None) -> str:
         logger.error(f"Fecha inválida: {e}")
         sys.exit(1)
 
-    logger.info(f"Fecha validada: {fecha}")
     return fecha
 
 
-# ---------------------------------------------------------------------------
-# Paso 2: Copiar archivos desde Descargas
-# ---------------------------------------------------------------------------
-def copiar_archivos(fecha: str) -> None:
-    """
-    Copia los Excel de cuentas corrientes desde Descargas al directorio de ingesta.
-    Formato del nombre: 'Cuenta Corriente {MONEDA} {dd-MM-yy}.xlsx'
-    """
+def validar_archivos_existen(fecha: str) -> None:
     fecha_dt = datetime.strptime(fecha, "%Y-%m-%d")
     fecha_dd_mm_yy = fecha_dt.strftime("%d-%m-%y")
 
     INGEST_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Directorio de ingesta: {INGEST_DIR}")
-
+    ANALYTICS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Revisamos que los excels existan
+    missing = []
     for moneda in MONEDAS:
         nombre_archivo = f"Cuenta Corriente {moneda} {fecha_dd_mm_yy}.xlsx"
-        origen = DOWNLOADS_DIR / nombre_archivo
-        destino = INGEST_DIR / nombre_archivo
+        if not (INGEST_DIR / nombre_archivo).exists():
+            missing.append(nombre_archivo)
+            
+    if missing:
+        logger.warning(f"⚠️ Faltan los siguientes archivos en {INGEST_DIR}: {missing}")
+        logger.warning("Si estás ejecutando desde Streamlit, recordá primero descargar los excels.")
+        # Podríamos lanzar excepcion, pero por ahora solo advertimos (quizas solo queriamos correr los que estan)
 
-        if origen.exists():
-            shutil.copy2(origen, destino)
-            logger.info(f"✅ Copiado: {nombre_archivo}")
-        else:
-            logger.warning(f"⚠️  No encontrado: {nombre_archivo}")
-
-
-# ---------------------------------------------------------------------------
-# Paso 3: Ejecutar el script PowerShell de ingesta por cada moneda
-# ---------------------------------------------------------------------------
-def procesar_moneda(fecha: str, moneda: str) -> bool:
-    """
-    Invoca ingest_cuenta_corriente_auto.ps1 para la moneda dada.
-    Devuelve True si el proceso terminó con código 0.
-    """
+def procesar_moneda(fecha: str, moneda: str, s3_client, sf_client) -> bool:
     logger.info(f"--- Procesando moneda: {moneda} ---")
+    fecha_dt = datetime.strptime(fecha, "%Y-%m-%d")
+    fecha_dd_mm_yy = fecha_dt.strftime("%d-%m-%y")
+    fecha_yyyy_mm_dd = fecha_dt.strftime("%Y%m%d")
+    
+    excel_filename = f"Cuenta Corriente {moneda} {fecha_dd_mm_yy}.xlsx"
+    excel_path = INGEST_DIR / excel_filename
+    
+    if not excel_path.exists():
+        logger.error(f"No se encontró el archivo '{excel_filename}' en {INGEST_DIR}")
+        return False
 
-    comando = [
-        "powershell.exe",
-        "-ExecutionPolicy", "Bypass",
-        "-File", str(PS1_SCRIPT),
-        "-fecha", fecha,
-        "-moneda", moneda,
-    ]
+    if moneda == "PESOS":
+        csv_filename = f"cuenta_corriente-{fecha_yyyy_mm_dd}.csv"
+        val_name = "cuenta_corriente"
+    elif moneda == "DOLARES":
+        csv_filename = f"cuenta_corriente_dolares-{fecha_yyyy_mm_dd}.csv"
+        val_name = "cuenta_corriente_dolares"
+    else:
+        csv_filename = f"cuenta_corriente_dolares_cable-{fecha_yyyy_mm_dd}.csv"
+        val_name = "cuenta_corriente_dolares_cable"
 
+    csv_path = INGEST_DIR / csv_filename
+    
+    # 1. Ejecutar validación
+    logger.info(f"[PYTHON] Ejecutando validador '{val_name}'...")
     try:
-        resultado = subprocess.run(
-            comando,
-            cwd=str(PROJECT_DIR),
-            capture_output=False,   # muestra stdout/stderr en tiempo real
-            text=True,
+        validator_main(
+            file_path=str(excel_path),
+            output_path=str(csv_path),
+            validator_name=val_name
         )
+    except Exception as e:
+        logger.error(f"Error en validación: {e}")
+        return False
+        
+    if not csv_path.exists():
+        logger.error(f"El archivo CSV '{csv_filename}' no fue creado.")
+        return False
 
-        if resultado.returncode == 0:
-            logger.info(f"✅ Moneda '{moneda}' procesada correctamente.")
-            return True
+    # 2. Subir a S3
+    logger.info("[S3] Subiendo CSV a S3...")
+    s3_key = f"{S3_PREFIX}/{csv_filename}"
+    try:
+        s3_client.upload_file(str(csv_path), S3_BUCKET, s3_key)
+        logger.info(f"[OK] Sincronización exitosa: s3://{S3_BUCKET}/{s3_key}")
+    except Exception as e:
+        logger.error(f"Error subiendo a S3: {e}")
+        return False
+
+    # 3. Preparar JSON y ejecutar Step Function
+    logger.info("[STEPFUNC] Iniciando Step Function...")
+    input_payload = {
+        "Records": [
+            {
+                "s3": {
+                    "bucket": {"name": S3_BUCKET},
+                    "object": {"key": s3_key}
+                }
+            }
+        ]
+    }
+    
+    try:
+        response = sf_client.start_execution(
+            stateMachineArn=STATE_MACHINE_ARN,
+            input=json.dumps(input_payload)
+        )
+        logger.info(f"[OK] Step Function iniciada. ARN: {response['executionArn']}")
+    except Exception as e:
+        logger.error(f"Fallo el inicio de la Step Function: {e}")
+        return False
+
+    # 4. Limpiar temporales
+    try:
+        csv_path.unlink(missing_ok=True)
+        excel_path.unlink(missing_ok=True)
+        logger.info("[CLEANUP] Archivos locales eliminados.")
+    except Exception as e:
+        logger.warning(f"No se pudieron limpiar archivos temporales: {e}")
+
+    # 5. Esperar procesamiento (30s igual que PowerShell)
+    logger.info("[WAIT] Esperando 30 segundos para que la Step Function procese...")
+    time.sleep(30)
+
+    # 6. Descargar resultados
+    logger.info("[DOWNLOAD] Descargando archivo histórico actualizado...")
+    
+    try:
+        if moneda == "PESOS":
+            hist_name = "cuenta_corriente_historico.csv"
+            # Adicional para pesos
+            s3_client.download_file("whitefinance-analytics", "profit.csv", str(ANALYTICS_DIR / "profit.csv"))
+        elif moneda == "DOLARES":
+            hist_name = "cuenta_corriente_dolares_historico.csv"
         else:
-            logger.error(
-                f"❌ Error procesando '{moneda}'. "
-                f"Código de salida: {resultado.returncode}"
-            )
-            return False
-
-    except FileNotFoundError:
-        logger.error(
-            "No se encontró powershell.exe. Verifica que PowerShell esté disponible en el PATH."
-        )
+            hist_name = "cuenta_corriente_dolares_cable_historico.csv"
+            
+        s3_client.download_file("withefinance-integrated", f"cuenta_corriente_historico/{hist_name}", str(ANALYTICS_DIR / hist_name))
+        logger.info(f"[OK] Proceso completado para {moneda}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error descargando archivos finales: {e}")
         return False
-    except Exception as exc:
-        logger.error(f"Error inesperado ejecutando PowerShell para '{moneda}': {exc}")
-        return False
-
 
 def procesar_cuentas_corrientes(fecha: str) -> None:
-    """Itera todas las monedas e invoca el script de ingesta para cada una."""
+    try:
+        s3_client = boto3.client('s3')
+        sf_client = boto3.client('stepfunctions')
+    except Exception as e:
+        logger.error(f"Error inicializando clientes AWS (verificar credenciales): {e}")
+        sys.exit(1)
+
     resultados: dict[str, bool] = {}
 
     for moneda in MONEDAS:
-        resultados[moneda] = procesar_moneda(fecha, moneda)
+        resultados[moneda] = procesar_moneda(fecha, moneda, s3_client, sf_client)
 
     logger.info("========================================")
     logger.info("Resumen de procesamiento:")
@@ -157,32 +212,28 @@ def procesar_cuentas_corrientes(fecha: str) -> None:
     logger.info("========================================")
 
 
-# ---------------------------------------------------------------------------
-# Paso 4: Notificación final
-# ---------------------------------------------------------------------------
 def notificar_finalizacion(fecha: str) -> None:
-    """Informa al usuario que el proceso terminó y qué debe hacer a continuación."""
     mensaje = f"""
 ========================================================
 ✅  Proceso refresh_earnings completado para: {fecha}
 ========================================================
-
-📌 PRÓXIMO PASO OBLIGATORIO:
-   Ejecuta y actualiza el notebook:
-   → notebooks/ganancias_realizadas.ipynb
-
-   Esto es necesario para que los datos recién ingestados
-   se reflejen en los reportes y visualizaciones.
-========================================================
 """
     print(mensaje)
-    logger.info("Notificación de finalización emitida.")
 
 
-# ---------------------------------------------------------------------------
-# Entrypoint
-# ---------------------------------------------------------------------------
-def main() -> None:
+def main(fecha_arg: str = None) -> None:
+    fecha = solicitar_fecha(fecha_arg)
+
+    logger.info("=== PASO 1: Validando Archivos ===")
+    validar_archivos_existen(fecha)
+
+    logger.info("=== PASO 2: Procesando cuentas corrientes ===")
+    procesar_cuentas_corrientes(fecha)
+
+    notificar_finalizacion(fecha)
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Actualiza las ganancias realizadas procesando cuentas corrientes."
     )
@@ -193,21 +244,5 @@ def main() -> None:
         help="Fecha de la cuenta corriente en formato YYYY-MM-DD (ej. 2024-01-15).",
     )
     args = parser.parse_args()
-
-    # Paso 1
-    fecha = solicitar_fecha(args.fecha)
-
-    # Paso 2
-    logger.info("=== PASO 2: Copiando archivos desde Descargas ===")
-    copiar_archivos(fecha)
-
-    # Paso 3
-    logger.info("=== PASO 3: Procesando cuentas corrientes ===")
-    procesar_cuentas_corrientes(fecha)
-
-    # Paso 4
-    notificar_finalizacion(fecha)
-
-
-if __name__ == "__main__":
-    main()
+    
+    main(args.fecha)
