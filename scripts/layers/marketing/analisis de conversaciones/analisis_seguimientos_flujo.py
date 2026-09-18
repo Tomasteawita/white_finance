@@ -43,8 +43,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-INPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260802/processed/instagram_audio_transcripts.csv")
-OUTPUT_DIR = Path("D:/DatosDeMercado/marketing_data/instagram_20260802/processed")
+INPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260912/processed/instagram_audio_transcripts.csv")
+OUTPUT_DIR = Path("D:/DatosDeMercado/marketing_data/instagram_20260912/processed")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 OUTPUT_SEGUIMIENTOS = OUTPUT_DIR / "seguimientos_exitosos_consolidados.csv"

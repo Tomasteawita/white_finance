@@ -1,16 +1,16 @@
 """
-analisis_dolores_todas.py
+analisis_dolores_datos.py
 =========================
-Extrae y consolida los "dolores" (pain points) de TODAS las conversaciones 
-registradas, independientemente de si iniciaron con FLUJO o no.
+Extrae y consolida los "dolores" (pain points) de las personas cuyas
+conversaciones fueron iniciadas por Tomás, o que iniciaron enviando la palabra DATOS.
 
 Pipeline:
-1. Carga el CSV de transcripciones de la nueva fecha (2026-08-20).
-2. Identifica conversaciones con interacciones del cliente.
+1. Carga el CSV de transcripciones.
+2. Filtra conversaciones (iniciadas por Tomás o primer mensaje "DATOS").
 3. Reconstruye el diálogo completo de cada conversación.
 4. Envía las conversaciones a Gemini Flash en batches para extraer el dolor principal.
 5. Consolida y agrupa dolores similares semánticamente.
-6. Genera CSV final.
+6. Genera CSV final con: Dolor común, porcentaje de conversaciones únicas, cantidad.
 """
 
 import os
@@ -41,8 +41,8 @@ INPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260912/processed/
 OUTPUT_DIR = Path("D:/DatosDeMercado/marketing_data/instagram_20260912/processed")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-OUTPUT_DOLORES = OUTPUT_DIR / "dolores_todas_consolidados.csv"
-OUTPUT_POR_CONV = OUTPUT_DIR / "dolores_todas_por_conversacion.csv"
+OUTPUT_DOLORES = OUTPUT_DIR / "dolores_datos_consolidados.csv"
+OUTPUT_POR_CONV = OUTPUT_DIR / "dolores_datos_por_conversacion.csv"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-flash-latest"
@@ -57,28 +57,49 @@ TOMAS_NAME_PATTERN = "Cueva"
 # PASO 1: CARGA Y FILTRADO
 # ─────────────────────────────────────────────
 
-def cargar_y_filtrar_todas(csv_path: Path) -> tuple[pd.DataFrame, list[str]]:
+def cargar_y_filtrar_datos(csv_path: Path) -> tuple[pd.DataFrame, list[str]]:
     """
-    Carga el CSV y retorna el dataframe completo y los IDs de conversaciones.
-    Filtra solo para asegurarse de que el cliente haya interactuado.
+    Carga el CSV y retorna df_datos y target_ids.
+    Filtra conversaciones donde YO empecé (contiene TOMAS_NAME_PATTERN) 
+    O el primer mensaje inicie con DATOS.
     """
     log.info(f"Cargando CSV: {csv_path}")
-    df = pd.read_csv(csv_path, encoding="latin-1", on_bad_lines="skip")
-    log.info(f"Total filas: {len(df):,} | Conversaciones únicas: {df['conversation_id'].nunique():,}")
+    df = pd.read_csv(csv_path, encoding="latin-1")
+    log.info(f"Total filas: {len(df):,} | Conversaciones unicas: {df['conversation_id'].nunique():,}")
 
-    df_cliente = df[~df["sender_name"].str.contains(TOMAS_NAME_PATTERN, na=False)].copy()
+    df_sorted = df.sort_values(["conversation_id", "timestamp_ms"])
     
-    todas_ids = df_cliente["conversation_id"].unique().tolist()
-    log.info(f"Conversaciones con al menos un mensaje del cliente: {len(todas_ids)}")
+    # Filtrar por fecha
+    df_sorted["date"] = pd.to_datetime(df_sorted["timestamp_ms"], unit="ms")
+    mask_date = (df_sorted["date"] >= "2026-09-05") & (df_sorted["date"] <= "2026-09-13")
+    df_sorted = df_sorted[mask_date].copy()
+    
+    if df_sorted.empty:
+        return df_sorted, []
 
-    df_todas = df[df["conversation_id"].isin(todas_ids)].copy()
-    return df_todas, todas_ids
+    primer_msg = df_sorted.groupby("conversation_id").first().reset_index()
+
+    es_tomas = primer_msg["sender_name"].str.contains(TOMAS_NAME_PATTERN, na=False)
+    
+    es_datos = (
+        primer_msg["full_text"]
+        .str.strip()
+        .str.upper()
+        .str.startswith("DATOS", na=False)
+    )
+
+    mask_valida = es_tomas | es_datos
+    target_ids = primer_msg.loc[mask_valida, "conversation_id"].tolist()
+    
+    log.info(f"Conversaciones iniciadas por Tomás o con 'DATOS': {len(target_ids)}")
+
+    df_filtrado = df[df["conversation_id"].isin(target_ids)].copy()
+    return df_filtrado, target_ids
 
 
 # ─────────────────────────────────────────────
 # PASO 2: RECONSTRUCCION DE DIALOGOS
 # ─────────────────────────────────────────────
-
 def reconstruir_dialogo(df_conv: pd.DataFrame, conversation_id: str) -> str:
     """Reconstruye el dialogo completo de una conversacion como texto plano."""
     conv = df_conv[df_conv["conversation_id"] == conversation_id].sort_values("timestamp_ms")
@@ -110,7 +131,6 @@ def reconstruir_dialogo(df_conv: pd.DataFrame, conversation_id: str) -> str:
 # ─────────────────────────────────────────────
 # PASO 3: EXTRACCION DE DOLORES VIA GEMINI
 # ─────────────────────────────────────────────
-
 def construir_prompt_batch(conversaciones: list) -> str:
     """Construye el prompt para un batch de conversaciones."""
     conv_texts = []
@@ -123,11 +143,11 @@ def construir_prompt_batch(conversaciones: list) -> str:
     prompt = (
         "Eres un experto en analisis de marketing y ventas para profesionales independientes latinoamericanos.\n"
         "Analiza las siguientes conversaciones de Instagram DMs entre un asesor financiero (TOMAS) "
-        "y clientes potenciales (CLIENTE).\n\n"
+        "y potenciales clientes (CLIENTE).\n\n"
         "Para cada conversacion, identifica el DOLOR PRINCIPAL que expresa el cliente.\n"
         "El dolor es el problema, frustracion o necesidad mas importante que menciona el cliente.\n\n"
         "REGLAS:\n"
-        "1. Si el cliente no expresa ningun dolor concreto (por ejemplo solo saluda, reacciona o pide precio sin contexto), usa: Sin dolor expresado\n"
+        "1. Si el cliente no expresa ningun dolor concreto, usa: Sin dolor expresado\n"
         "2. Se especifico pero generalizable: no uses nombres propios.\n"
         "   Usa categorias como: no llego a fin de mes, no se como ahorrar, gastos mezclados negocio y personal, etc.\n"
         "3. Usa espanol rioplatense/argentino natural.\n"
@@ -142,28 +162,27 @@ def construir_prompt_batch(conversaciones: list) -> str:
 
 
 def extraer_dolores_con_gemini(
-    todas_ids: list,
-    df_todas: pd.DataFrame,
+    target_ids: list,
+    df_filtrado: pd.DataFrame,
     api_key: str
 ) -> pd.DataFrame:
     """
     Envia conversaciones a Gemini en batches y extrae el dolor por conversacion.
-    Usa la nueva SDK google-genai.
     """
     if not api_key:
-        raise ValueError("GEMINI_API_KEY no configurada.")
+        raise ValueError("GEMINI_API_KEY no configurada. Agregar al .env o como variable de entorno del sistema.")
     
     client = genai.Client(api_key=api_key)
     
     log.info(f"Iniciando extraccion con modelo: {GEMINI_MODEL}")
-    log.info(f"Total conversaciones: {len(todas_ids)} | Batch size: {BATCH_SIZE}")
+    log.info(f"Total conversaciones: {len(target_ids)} | Batch size: {BATCH_SIZE}")
     
     resultados_todos = []
     batches_fallidos = []
     
     dialogos = [
-        (conv_id, reconstruir_dialogo(df_todas, conv_id))
-        for conv_id in todas_ids
+        (conv_id, reconstruir_dialogo(df_filtrado, conv_id))
+        for conv_id in target_ids
     ]
     
     total_batches = (len(dialogos) + BATCH_SIZE - 1) // BATCH_SIZE
@@ -176,7 +195,6 @@ def extraer_dolores_con_gemini(
         
         prompt = construir_prompt_batch(batch)
         
-        # Retry con backoff exponencial
         exito = False
         for intento in range(1, MAX_RETRIES + 1):
             try:
@@ -212,7 +230,7 @@ def extraer_dolores_con_gemini(
                 error_str = str(e)
                 if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
                     wait_time = 60 * intento
-                    log.warning(f"  Rate limit (429). Esperando {wait_time}s...")
+                    log.warning(f"  Rate limit (429) en batch {batch_num}, intento {intento}/{MAX_RETRIES}. Esperando {wait_time}s...")
                     time.sleep(wait_time)
                 else:
                     log.error(f"  ERROR en batch {batch_num} (intento {intento}): {e}")
@@ -244,28 +262,23 @@ def extraer_dolores_con_gemini(
 # ─────────────────────────────────────────────
 # PASO 4: CONSOLIDACION Y NORMALIZACION
 # ─────────────────────────────────────────────
-
 def normalizar_dolores_con_gemini(dolores_unicos: list, client) -> dict:
-    """
-    Usa Gemini para agrupar dolores similares bajo etiquetas canonicas.
-    """
-    # Excluimos explícitamente "Sin dolor expresado" para que no lo mezcle
-    dolores_filtrados = [d for d in dolores_unicos if "sin dolor" not in d.lower()]
-    dolores_texto = "\n".join([f"- {d}" for d in dolores_filtrados])
+    dolores_texto = "\n".join([f"- {d}" for d in dolores_unicos])
     
     prompt = (
         "Eres experto en analisis de clientes para servicios financieros en Argentina.\n\n"
         "Tienes esta lista de dolores/problemas expresados por clientes potenciales:\n\n"
         f"{dolores_texto}\n\n"
         "Agrupa los dolores similares bajo una etiqueta canonica comun en espanol rioplatense.\n"
-        "Maximo 15-20 grupos distintos. Se especifico pero representativo.\n"
+        "Maximo 12-15 grupos distintos. Se especifico pero representativo.\n"
         "No uses jerga tecnica financiera, usa el lenguaje coloquial del cliente.\n\n"
         "Ejemplos de buenas etiquetas canonicas:\n"
         "- No llego a fin de mes\n"
         "- No se como ahorrar de forma consistente\n"
         "- Gastos mezclados entre negocio y vida personal\n"
         "- Quiero comprar mi primer vehiculo o propiedad\n"
-        "- Ingresos variables o inestables\n\n"
+        "- Ingresos variables o inestables\n"
+        "- Sin dolor expresado\n\n"
         "Responde UNICAMENTE con JSON valido:\n"
         '{"mapeo": {"dolor original exacto": "etiqueta canonica", ...}}'
     )
@@ -284,23 +297,12 @@ def normalizar_dolores_con_gemini(dolores_unicos: list, client) -> dict:
         if not json_match:
             raise ValueError("No JSON en respuesta de normalizacion")
         datos = json.loads(json_match.group())
-        mapeo = datos.get("mapeo", {})
-        
-        # Volver a mapear sin dolor expresado
-        for d in dolores_unicos:
-            if "sin dolor" in d.lower():
-                mapeo[d] = "Sin dolor expresado"
-                
-        return mapeo
+        return datos.get("mapeo", {})
     except Exception as e:
         log.error(f"Error en normalizacion de dolores: {e}")
         return {d: d for d in dolores_unicos}
 
-
 def consolidar_dolores(df_dolores: pd.DataFrame, api_key: str) -> pd.DataFrame:
-    """
-    Normaliza los dolores en categorias canonicas usando Gemini.
-    """
     log.info("Consolidando y normalizando dolores...")
     
     df_dedup = (
@@ -326,12 +328,7 @@ def consolidar_dolores(df_dolores: pd.DataFrame, api_key: str) -> pd.DataFrame:
 # ─────────────────────────────────────────────
 # PASO 5: REPORTE FINAL
 # ─────────────────────────────────────────────
-
 def generar_reporte_final(df_consolidado: pd.DataFrame) -> pd.DataFrame:
-    """
-    Genera el reporte final con las columnas solicitadas.
-    Ordenado por frecuencia descendente (Pareto).
-    """
     total_convs = df_consolidado["conversation_id"].nunique()
     
     reporte = (
@@ -363,17 +360,20 @@ def generar_reporte_final(df_consolidado: pd.DataFrame) -> pd.DataFrame:
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
-
 def main() -> None:
     log.info("=" * 60)
-    log.info("ANALISIS DE DOLORES - TODAS LAS CONVERSACIONES (2026-08-20)")
+    log.info("ANALISIS DE DOLORES - CONVERSACIONES 'DATOS' O INICIADAS POR MI (INSTAGRAM)")
     log.info("=" * 60)
     
     # 1. Cargar y filtrar
-    df_todas, todas_ids = cargar_y_filtrar_todas(INPUT_CSV)
+    df_datos, datos_ids = cargar_y_filtrar_datos(INPUT_CSV)
     
+    if df_datos.empty:
+        log.warning("No se encontraron conversaciones que coincidan con los criterios.")
+        return
+        
     # 2. Extraer dolores
-    df_dolores = extraer_dolores_con_gemini(todas_ids, df_todas, GEMINI_API_KEY)
+    df_dolores = extraer_dolores_con_gemini(datos_ids, df_datos, GEMINI_API_KEY)
     
     # Guardar intermedio para trazabilidad
     df_dolores.to_csv(OUTPUT_POR_CONV, index=False, encoding="utf-8-sig")
@@ -398,6 +398,10 @@ def main() -> None:
     total_convs = df_consolidado["conversation_id"].nunique()
     log.info(f"\nTotal conversaciones analizadas: {total_convs}")
     log.info(f"Total categorias de dolor: {len(reporte)}")
+    
+    top3 = reporte.head(3)
+    pct_top3 = top3["Porcentaje de conversaciones unicas (%)"].sum()
+    log.info(f"Top 3 dolores = {pct_top3:.1f}% del total (principio Pareto)")
 
 
 if __name__ == "__main__":

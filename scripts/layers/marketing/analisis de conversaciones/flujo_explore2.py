@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv('D:/DatosDeMercado/marketing_data/instagram_20260802/processed/instagram_audio_transcripts.csv', encoding='latin-1')
+df = pd.read_csv('D:/DatosDeMercado/marketing_data/instagram_20260912/processed/instagram_audio_transcripts.csv', encoding='latin-1')
 
 # Cliente = no Tomas Cueva
 df_cliente = df[~df['sender_name'].str.contains('Cueva', na=False)].copy()

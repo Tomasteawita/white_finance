@@ -6,7 +6,7 @@ identifica notas de voz/archivos de audio, los transcribe utilizando el modelo W
 y genera archivos consolidados en JSONL y Excel estructurados para análisis en Lenguaje Natural.
 
 Uso:
-    python transcribe_instagram_audio.py --inbox_path "D:\DatosDeMercado\marketing_data\instagram_20260802\your_instagram_activity\messages\inbox" --output_dir "D:\DatosDeMercado\marketing_data\instagram_20260802\processed"
+    python transcribe_instagram_audio.py --inbox_path "D:\DatosDeMercado\marketing_data\instagram_20260912\your_instagram_activity\messages\inbox" --output_dir "D:\DatosDeMercado\marketing_data\instagram_20260912\processed"
 """
 
 import os
@@ -260,6 +260,11 @@ def save_nlp_outputs(records: List[Dict[str, Any]], output_dir: str):
     excel_file = out_path / "instagram_audio_transcripts.xlsx"
     df.to_excel(excel_file, index=False)
     print(f"[SUCCESS] Excel navegable guardado en: {excel_file}")
+
+    # 4. Guardar en CSV para scripts anteriores
+    csv_file = out_path / "instagram_audio_transcripts.csv"
+    df.to_csv(csv_file, index=False, encoding="latin-1", errors="replace")
+    print(f"[SUCCESS] CSV guardado en: {csv_file}")
 
 
 def main():

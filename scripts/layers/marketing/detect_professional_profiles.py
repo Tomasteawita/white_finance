@@ -701,7 +701,7 @@ def main() -> None:
 
     # ---- Paso 2: Cargar datos ----
     input_path: str = (
-        r"D:\DatosDeMercado\marketing_data\instagram_20260802\processed\chat_corpus_nlp.jsonl"
+        r"D:\DatosDeMercado\marketing_data\instagram_20260912\processed\chat_corpus_nlp.jsonl"
     )
     conversations = load_conversations_from_jsonl(input_path)
 

@@ -21,8 +21,8 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-INPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260820/processed/dolores_todas_consolidados.csv")
-OUTPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260820/processed/preguntas_abiertas_setting_todas.csv")
+INPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260912/processed/dolores_todas_consolidados.csv")
+OUTPUT_CSV = Path("D:/DatosDeMercado/marketing_data/instagram_20260912/processed/preguntas_abiertas_setting_todas.csv")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-flash-latest"
