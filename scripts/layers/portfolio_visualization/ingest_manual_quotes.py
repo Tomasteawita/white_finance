@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - [%(levelname)s] - 
 logger = logging.getLogger("ManualIngest")
 
 def get_engine():
-    load_dotenv(r'c:\Users\tomas\white_finance\.env')
+    load_dotenv()
     user = os.getenv("POSTGRE_USER", "postgres")
     pwd = os.getenv("POSTGRE_PASSWORD", "postgres")
     host = os.getenv("POSTGRE_HOST", "localhost")
@@ -21,7 +21,7 @@ def get_engine():
 import sys
 
 def main():
-    folder = r"c:\Users\tomas\white_finance\data\analytics\cotizaciones"
+    folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "analytics", "cotizaciones"))
     engine = get_engine()
     
     if len(sys.argv) > 1:

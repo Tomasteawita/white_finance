@@ -20,5 +20,6 @@ dash>=2.17.0
 plotly>=5.22.0
 gunicorn>=22.0.0
 yfinance
-psycopg2
+psycopg2-binary
 boto3
+google-genai

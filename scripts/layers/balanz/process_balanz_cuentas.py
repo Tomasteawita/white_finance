@@ -12,7 +12,7 @@ logger = logging.getLogger("BalanzProcessor")
 
 class BalanzAccountProcessor:
     def __init__(self):
-        self.base_path = r"c:\Users\tomas\white_finance"
+        self.base_path = r"c:\Users\User\white_finance"
         self.data_balanz_path = os.path.join(self.base_path, "data", "balanz")
         self.cnv_quotes_path = os.path.join(self.base_path, "data", "analytics", "cotizaciones", "FCIs_cnv.gov.ar_SitioWeb_FondosComunesInversion_Cuotapartes")
         self.engine = self._init_db()

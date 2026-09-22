@@ -45,6 +45,16 @@ class BalanzClientPortfolioEvolution:
 
         self.maps_fci = self.load_maps()
         self.cc_path = self._find_cc_file()
+        self.ratios_cedear = self.fetch_cedear_ratios()
+
+    def fetch_cedear_ratios(self) -> dict:
+        engine = create_engine(self.db_uri)
+        try:
+            df_ratios = pd.read_sql("SELECT ticker, ratio FROM earnings.ratios_cedears", engine)
+            return dict(zip(df_ratios['ticker'], df_ratios['ratio']))
+        except Exception as e:
+            self.logger.error(f"No se pudieron cargar los ratios: {e}")
+            return {}
 
     def _find_cc_file(self) -> str:
         cc_file = os.path.join(self.cc_dir, 'cuenta_corriente_historico.csv')
@@ -94,23 +104,63 @@ class BalanzClientPortfolioEvolution:
         engine = create_engine(self.db_uri)
         tickers_tuple = tuple(tickers)
         if len(tickers_tuple) == 1:
-            query = text("SELECT date, ticker, close FROM earnings.historical_prices WHERE ticker = :t")
+            query = text("SELECT date, ticker, close, source FROM earnings.historical_prices WHERE ticker = :t")
             df = pd.read_sql(query, engine, params={'t': tickers_tuple[0]})
         else:
-            query = f"SELECT date, ticker, close FROM earnings.historical_prices WHERE ticker IN {tickers_tuple}"
+            query = f"SELECT date, ticker, close, source FROM earnings.historical_prices WHERE ticker IN {tickers_tuple}"
             df = pd.read_sql(query, engine)
+
+        encontrados = set()
+        if not df.empty:
+            encontrados = set(df['ticker'].unique())
+            
+        faltantes = set(tickers) - encontrados
+        if faltantes:
+            self.logger.info(f"Tickers faltantes en DB: {faltantes}. Invocando ExtractionPipeline...")
+            try:
+                import sys
+                import os
+                pipelines_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "pipelines", "portfolio_visualization"))
+                if pipelines_path not in sys.path:
+                    sys.path.append(pipelines_path)
+                from extraction_prices import ExtractionPipeline
+                
+                pipeline = ExtractionPipeline()
+                pipeline.run(list(faltantes))
+                
+                if len(tickers_tuple) == 1:
+                    df = pd.read_sql(query, engine, params={'t': tickers_tuple[0]})
+                else:
+                    df = pd.read_sql(query, engine)
+            except Exception as e:
+                self.logger.error(f"Falla al ejecutar ExtractionPipeline: {e}")
             
         if df.empty:
             return pd.DataFrame()
             
+        # Unir CCL para pesificar si la fuente es YFinance_USD
+        df['date'] = pd.to_datetime(df['date'])
+        ccl_series = self._get_ccl_series().reset_index()
+        ccl_series['date'] = pd.to_datetime(ccl_series['date'])
+        df = df.merge(ccl_series, on='date', how='left')
+        df['ccl'] = df['ccl'].ffill().bfill()
+        
+        # Mapear el ratio del CEDEAR
+        df['ratio'] = df['ticker'].map(self.ratios_cedear).fillna(1.0)
+        
+        # Calcular close_ars
+        df['close_ars'] = np.where(
+            df['source'] == 'YFinance_USD', 
+            (df['close'] * df['ccl']) / df['ratio'], 
+            df['close']
+        )
+
         # Corrección: Bonos y Letras cotizan cada 100 nominales
-        tickers_cada_100 = {"AE38", "AL30", "BPOC7", "GD30", "GD35", "S14G6", "T15E7", "TZX28"}
+        tickers_cada_100 = {"AE38", "AL30", "BPOC7", "GD30", "GD35", "S14G6", "T15E7", "TZX28", "AO27"}
         mask = df['ticker'].isin(tickers_cada_100)
         if mask.any():
-            df.loc[mask, 'close'] = df.loc[mask, 'close'] / 100.0
-            
-        df['date'] = pd.to_datetime(df['date'])
-        pivot = df.pivot(index='date', columns='ticker', values='close')
+            df.loc[mask, 'close_ars'] = df.loc[mask, 'close_ars'] / 100.0
+        pivot = df.pivot(index='date', columns='ticker', values='close_ars')
         return pivot.ffill().bfill()
 
     def process_holdings(self):
@@ -143,7 +193,7 @@ class BalanzClientPortfolioEvolution:
             # Simulamos un pivot vacío
             quotes_pivot = pd.DataFrame()
 
-        portfolio = {'Cash_ARS': 0.0}
+        portfolio = {'Cash_ARS': 0.0, 'Cash_MEP': 0.0, 'Cash_CCL': 0.0}
         daily_snapshots = []
         boletos_tickers = set()
         
@@ -158,8 +208,16 @@ class BalanzClientPortfolioEvolution:
             if descripcion.startswith("Recibo de Cobro") or descripcion.startswith("Comprobante de Pago"):
                 flujo_neto = importe
 
-            # 1. Actualizar Cash (el saldo que reporta Balanz es el Cash_ARS del cliente)
-            portfolio['Cash_ARS'] = saldo
+            # 1. Actualizar Cash dependiendo de la moneda
+            moneda_str = str(row.get('moneda', '')).strip().lower()
+            if 'pesos' in moneda_str:
+                portfolio['Cash_ARS'] = saldo
+            elif '7000' in moneda_str:
+                portfolio['Cash_CCL'] = saldo
+            elif 'lares' in moneda_str or 'lres' in moneda_str or 'd' in moneda_str:
+                portfolio['Cash_MEP'] = saldo
+            else:
+                portfolio['Cash_ARS'] = saldo
 
             # 2. Identificar si es operación de FCI o Boleto
             official_name = self._get_fci_name_from_description(descripcion)
@@ -182,6 +240,9 @@ class BalanzClientPortfolioEvolution:
                     try:
                         # Buscar el precio más cercano anterior o igual a esta fecha
                         idx = quotes_pivot.index.get_indexer([fecha], method='pad')[0]
+                        if idx == -1:
+                            # Si es anterior a la primera fecha disponible, usamos el precio más antiguo
+                            idx = quotes_pivot.index.get_indexer([fecha], method='backfill')[0]
                         if idx != -1:
                             precio_fci = quotes_pivot.iloc[idx][official_name]
                     except KeyError:
@@ -250,6 +311,18 @@ class BalanzClientPortfolioEvolution:
         idx = pd.date_range(holdings_diarios.index.min(), end_date)
         holdings = holdings_diarios.reindex(idx, method='ffill').fillna(0)
         
+        # --- NUEVO: Ajuste por Stock Split del CEDEAR SPY (Ratio 20 a 60, Split 3:1) ---
+        # El split ocurrió aprox el 2026-06-01. Todas las tenencias acumuladas hasta ese momento se triplicaron.
+        # Las operaciones de cuenta corriente posteriores ya venían con la nueva cotización y cantidad.
+        if 'SPY' in holdings.columns:
+            try:
+                pre_split_spy = holdings.loc[:'2026-05-31', 'SPY'].iloc[-1]
+                if pre_split_spy > 0:
+                    holdings.loc['2026-06-01':, 'SPY'] += (pre_split_spy * 2)
+                    print(f"DEBUG POST SPLIT: {holdings.loc['2026-09-18', 'SPY']}")
+            except Exception as e:
+                pass
+        
         # Para el Flujo_Neto no queremos ffill (los flujos solo ocurren en el día exacto)
         if 'Flujo_Neto' in holdings_diarios.columns:
             holdings['Flujo_Neto'] = holdings_diarios['Flujo_Neto'].reindex(idx, fill_value=0.0)
@@ -268,7 +341,8 @@ class BalanzClientPortfolioEvolution:
         
         self.logger.info("Aplicando valuación de cuotapartes y especies usando precios extraídos...")
         # Valorizar Activos (Nominales * Precio = Valor en ARS)
-        activos_names = [col for col in holdings.columns if col != 'Cash_ARS']
+        no_activos = {'Cash_ARS', 'Cash_MEP', 'Cash_CCL', 'Flujo_Neto'}
+        activos_names = [col for col in holdings.columns if col not in no_activos]
         for activo in activos_names:
             if activo in precios_matriz.columns:
                 df_consolidado[activo + '_Val_ARS'] = df_consolidado[activo] * precios_matriz[activo]
@@ -278,7 +352,15 @@ class BalanzClientPortfolioEvolution:
         # Total Patrimonio ARS = Cash + sum(Valor_Activo)
         val_columns = [col for col in df_consolidado.columns if col.endswith('_Val_ARS')]
         df_consolidado['Total_Activos_ARS'] = df_consolidado[val_columns].sum(axis=1)
-        df_consolidado['Patrimonio_ARS'] = df_consolidado['Cash_ARS'] + df_consolidado['Total_Activos_ARS']
+        
+        # Asumimos que el MEP y CCL son similares para el saldo en dolares. 
+        # Multiplicamos Cash_MEP y Cash_CCL por el valor de CCL
+        df_consolidado['Patrimonio_ARS'] = (
+            df_consolidado['Cash_ARS'] + 
+            (df_consolidado['Cash_MEP'] * df_consolidado['CCL']) + 
+            (df_consolidado['Cash_CCL'] * df_consolidado['CCL']) +
+            df_consolidado['Total_Activos_ARS']
+        )
         
         # Total Patrimonio USD = Patrimonio_ARS / CCL
         df_consolidado['Patrimonio_USD'] = df_consolidado['Patrimonio_ARS'] / df_consolidado['CCL']
@@ -332,9 +414,17 @@ class BalanzClientPortfolioEvolution:
         df_consolidado.index.name = 'Fecha'
         df_final = df_consolidado.reset_index()
         
+        # Guardar CSV con los Holdings Diarios Detallados (nominales, valorizaciones y precios)
+        output_holdings = os.path.join(self.reports_dir, f"holdings_diarios_{self.client_name.lower()}.csv")
+        os.makedirs(os.path.dirname(output_holdings), exist_ok=True)
+        df_final.to_csv(output_holdings, index=False)
+        self.logger.info(f"Holdings diarios generados exitosamente. Archivo guardado en: {output_holdings}")
+        
         columnas_finales = [
             'Fecha', 
             'Cash_ARS', 
+            'Cash_MEP',
+            'Cash_CCL',
             'Patrimonio_ARS', 
             'Patrimonio_USD', 
             'Capital_Inicial_Proyectado_IPC_ARS', 
@@ -365,4 +455,6 @@ if __name__ == "__main__":
         evolution = BalanzClientPortfolioEvolution(client_name=client_name)
         evolution.generate_evolution()
     except Exception as e:
-        logging.error(f"Error crítico procesando el cliente {client_name}: {e}")
+        print(f"CRITICAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
