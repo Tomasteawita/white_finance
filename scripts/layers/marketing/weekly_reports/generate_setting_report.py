@@ -387,9 +387,11 @@ def main():
     # Limpiar proceso
     process_date_clean = process_date_str.replace("-", "")
     
-    base_dir = Path(f"D:/DatosDeMercado/marketing_data/instagram_{process_date_clean}/your_instagram_activity/messages/inbox")
-    followers_file = Path(f"D:/DatosDeMercado/marketing_data/instagram_{process_date_clean}/connections/followers_and_following/followers_1.json")
-    output_dir = Path(f"D:/DatosDeMercado/marketing_data/instagram_{process_date_clean}/processed")
+    MARKETING_BASE_DIR = os.getenv("MARKETING_BASE_DIR", "D:/DatosDeMercado/marketing_data")
+    
+    base_dir = Path(f"{MARKETING_BASE_DIR}/instagram_{process_date_clean}/your_instagram_activity/messages/inbox")
+    followers_file = Path(f"{MARKETING_BASE_DIR}/instagram_{process_date_clean}/connections/followers_and_following/followers_1.json")
+    output_dir = Path(f"{MARKETING_BASE_DIR}/instagram_{process_date_clean}/processed")
     output_dir.mkdir(parents=True, exist_ok=True)
     
     output_csv = output_dir / f"setting_weekly_report_{start_date_str}_{end_date_str}.csv"

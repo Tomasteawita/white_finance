@@ -10,6 +10,29 @@ Toda ejecución debe realizarse desde el entorno virtual local del proyecto. Abr
 
 ---
 
+## 0. Descarga Automática de Cuentas Corrientes (Web Scraping)
+**Script:** `scripts/scraping/scraping_manager.py` | **Panel UI:** `apps/frontend/app.py`
+
+Automatiza el login en `https://productores.balanz.com/` con Google Chrome, busca cada cliente de `data/balanz/` (usando formato `.title()` o el mapeo en `data/balanz/clients_search_map.json`), filtra la Cuenta Corriente desde la fecha elegida hasta hoy, exporta el Excel (`Cuenta Corriente.xlsx`), lo renombra a `Cuenta Corriente-YYYYMMDD.xlsx` y lo mueve a `data/balanz/{CLIENTE}/Cuenta Corriente/`.
+
+**Requisitos en `.env`:**
+```env
+USERNAME_BALANZ=tu_usuario
+PASSWORD_BALANZ=tu_contraseña
+```
+
+**Opción A — Ejecución con un click desde Panel Streamlit:**
+```powershell
+.\venv\Scripts\streamlit run apps\frontend\app.py
+```
+
+**Opción B — Ejecución por CLI:**
+```powershell
+.\venv\Scripts\python -m scripts.scraping.scraping_manager --task cuentas_corrientes --broker Balanz --start-date 2026-09-16
+```
+
+---
+
 ## 1. Extracción de Cotizaciones (CNV)
 **Script:** `extraction_fci_cnv.py`
 

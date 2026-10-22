@@ -60,8 +60,10 @@ services:
       - .env
     environment:
       - POSTGRE_HOST=postgres
+      - MARKETING_BASE_DIR=/app/marketing_data
     volumes:
       - ./apps:/app/apps
       - ./scripts:/app/scripts
       - ./data:/app/data
       - ./.env:/app/.env
+      - D:/DatosDeMercado/marketing_data:/app/marketing_data

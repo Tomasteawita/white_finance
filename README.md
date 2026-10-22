@@ -121,3 +121,11 @@ Lo importante es que la clave Records[0][S3][Bucket][Name] y Records[0][S3][obje
 5. Descargar el profit desde el bucket whitefinance-analytics path profit.csv
 6. Para hacer hacer el análisis de datos, utilizar el path de jupyter http://127.0.0.1:8888/lab, despues de ejecutar el docker-compose up --build -d
 7. En caso de actualizar data, esperar a que se genere el profit y la cuenta corriente historica, luego mover ambos archivos actualizados al path ./data/analytics y ejecutar el notebook que corresponda para ver la el historico de ganancias realizadas.
+
+# Ejecución para clientes de balanz
+```shell
+# descargar contizaciones de fondos comunes de inversión y bonos soberanos, fijarse que los scripts tengan los bonos seteados
+.\venv\Scripts\python .\scripts\layers\balanz\extraction_fci_cnv.py
+.\venv\Scripts\python .\scripts\layers\portfolio_visualization\ingest_manual_quotes.py
+.\venv\Scripts\python .\scripts\layers\balanz\client_portfolio_evolution.py "GAMBALE LAURA SOLEDAD"
+```
